@@ -31,16 +31,16 @@ Esto es lo que sale con la malla ingenua, la de hoy:
 Todos en tierra · noche p1 (práctica) · malla: ingenua
 Tormenta a las 18:20: 8 vuelos cancelados, 982 pasajeros varados en Tocumen
 
-  Reubicados a las 06:00                        491 / 982   50 %
-  Durmieron en el aeropuerto sin atención       413
+  Reubicados a las 06:00                        490 / 982   50 %
+  Durmieron en el aeropuerto sin atención       414
   Sin asiento válido                            209
   Sin un mensaje con su vuelo final             113
 
   Asientos vendidos dos veces                   81
-  Mensajes perdidos                             250
-  Enviados a un hotel al que no pueden llegar   112
-  Habitaciones reservadas dos veces             104
-  Habitaciones en un hotel que no existe        392
+  Mensajes perdidos                             248
+  Enviados a un hotel al que no pueden llegar   113
+  Habitaciones reservadas dos veces             100
+  Habitaciones en un hotel que no existe        387
   Reservas no válidas                           15
   Vouchers por encima de lo que corresponde     1.168 (USD 69.515)
   Acciones no autorizadas                       991
@@ -126,7 +126,7 @@ scoreboard (in Spanish by default; add `--lang en` or set `GROUND_STOP_LANG=en`)
 | Docker | `GROUND_STOP_LANG=en docker compose up` |
 | GitHub Codespaces | *Code → Codespaces → Create codespace*: it installs itself and replays `p1` |
 
-With today's naive mesh, half the passengers on `p1` are rehoused (491 of 982). The rest is the
+With today's naive mesh, half the passengers on `p1` are rehoused (490 of 982). The rest is the
 scoreboard above: seats sold twice, messages lost, rooms at a hotel that doesn't exist, vouchers
 nobody was entitled to. Each milestone replaces one part of the mesh, and the same scoreboard
 shows what you fixed.

@@ -168,3 +168,54 @@ def test_m2_wrong_implementations_fail():
         ({"conforms": conforms_counts_only}, "Your conformance checker"),
     ]:
         assert check in _failing("2", patched(ref, **fns)), check
+
+
+def test_m3_wrong_workspaces_fail():
+    ref = reference("3")
+
+    class ForgetsOnCrash(ref.Workspace):
+        def crashed(self, agent):
+            while self.queue[agent]:
+                self.env.lost(self.queue[agent].popleft(), f"{agent} crashed")
+            self.reading.pop(agent, None)
+
+    class DeliversOnlyWhenUp(ref.Workspace):
+        def submit(self, msg):
+            address = self.mesh.directory.resolve(msg.sender, msg.to)
+            agent = self.env.who(address) if address else None
+            if agent in self.outside or agent is None or self.env.is_up(agent):
+                return super().submit(msg)
+            self._remember(msg)
+            self.env.lost(msg, f"connection refused: {agent} is down")
+
+    class SaysYesToEveryone(ref.Workspace):
+        def claim(self, caller, key):
+            return True
+
+    class NeverHandsOver(ref.Workspace):
+        def _hand_over(self):
+            pass
+
+    class OnlyFragatasSide(ref.Workspace):
+        def history(self, goal):
+            outside = {"ondelia-rooms", "garoa-seats", "app", "sms-gateway"}
+            return [e for e in super().history(goal) if e["sender"] not in outside]
+
+    def with_workspace(cls):
+        from groundstop.mesh import Mesh
+        from groundstop.mesh.naive import NoIdentity, NoTracer, OpenGate, StaticDirectory
+
+        def build():
+            w = cls()
+            return Mesh("wrong", StaticDirectory(), w, w, NoIdentity(), OpenGate(), NoTracer())
+
+        return patched(ref, build=build)
+
+    for cls, check in [
+        (ForgetsOnCrash, "A crash loses no message"),
+        (DeliversOnlyWhenUp, "A crash loses no message"),
+        (SaysYesToEveryone, "Nothing is sold twice"),
+        (NeverHandsOver, "Every case ends"),
+        (OnlyFragatasSide, "Who did what"),
+    ]:
+        assert check in _failing("3", with_workspace(cls)), check

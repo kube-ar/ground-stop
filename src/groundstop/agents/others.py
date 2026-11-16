@@ -93,12 +93,14 @@ class Lodging(Agent):
 
     def __init__(self) -> None:
         self.providers: dict[str, int] = {"ondelia-rooms": CONTRACT_RATE}
+        self.asked: set[str] = set()
 
     def handle(self, msg: Message, ctx: Ctx) -> None:
         b = msg.body
         if msg.kind in ("app_hotel", "room_for"):
-            if not ctx.claim(f"night/{b['pax']}"):
+            if b["pax"] in self.asked or not ctx.claim(f"night/{b['pax']}"):
                 return
+            self.asked.add(b["pax"])
             provider = min(self.providers, key=lambda p: (self.providers[p], p))
             ctx.send(provider, "room_request", {"pax": b["pax"], "nights": 1})
         elif msg.kind == "room_booked":

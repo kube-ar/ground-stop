@@ -13,7 +13,7 @@ How to find them:
 
 def answers() -> dict:
     return {
-        "rehoused": 491,
+        "rehoused": 490,
         "seat_sold_twice": {"flight": "F419+1", "seat": "1E", "passengers": ["PX-48055", "PX-48058"]},
         "never_reached_crew": "F976+1",
     }
