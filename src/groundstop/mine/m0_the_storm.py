@@ -13,7 +13,7 @@ def answers() -> dict:
     #
     # return {
     #     "rehoused": 123,                 # the scoreboard's first line: how many were rehoused by 06:00
-    #     "seat_sold_twice": {             # one seat two passengers ended up holding (systems.log)
+    #     "seat_sold_twice": {             # one seat two passengers hold at 06:00 (passengers.jsonl, systems.log)
     #         "flight": "F123+1",
     #         "seat": "14C",
     #         "passengers": ["PX-10001", "PX-10002"],

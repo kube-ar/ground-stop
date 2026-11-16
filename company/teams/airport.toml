@@ -12,5 +12,5 @@ messaging = "http://messaging.customer.fragata.internal:8080"
 
 [[agents]]
 id = "baggage"
-purpose = { es = "Reasigna las maletas facturadas al vuelo nuevo de su dueño.", en = "Moves checked bags to their owner's new flight." }
+purpose = { es = "Pasa las maletas facturadas al vuelo nuevo del pasajero.", en = "Moves checked bags to their owner's new flight." }
 address = "http://baggage.airport.fragata.internal:8080"

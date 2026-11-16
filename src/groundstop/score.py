@@ -26,8 +26,9 @@ SEAT_PROBLEMS = ("wrong_city", "fare_rules", "no_crew", "not_confirmed")
 @dataclass
 class Outcome:
     pax: str
-    seat: str  # ok, none, seat_taken, or a problem in SEAT_PROBLEMS
+    seat: str  # ok, none, seat_taken (someone else holds the same seat), or a problem in SEAT_PROBLEMS
     flight: str | None
+    seat_id: str | None
     night: str  # home, care, room; or none, unreachable, fake, late
     told: bool
     rehoused: bool
@@ -130,7 +131,7 @@ def score(engine: Engine) -> Board:
             b and texts and texts[-1].flight == b.flight and texts[-1].seat == b.seat and texts[-1].lang == p.lang
         )
         ok = seat == "ok" and rest in ("home", "care", "room") and told
-        outcomes.append(Outcome(p.id, seat, b.flight if b else None, rest, told, ok))
+        outcomes.append(Outcome(p.id, seat, b.flight if b else None, b.seat if b else None, rest, told, ok))
 
         delay = (night.flight(b.flight).dep - night.flight(p.flight).dep) / 3600 if seat == "ok" else None
         due = Counter(kind for kind, _ in entitlement(delay))

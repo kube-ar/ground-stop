@@ -92,15 +92,15 @@ def run(module: ModuleType) -> list[Result]:
     if key not in doubles:
         seat.fail(
             {
-                "es": f"{key[0]} {key[1]}: en systems.log ese asiento no quedó con dos pasajeros",
-                "en": f"{key[0]} {key[1]}: in systems.log that seat didn't end up with two passengers",
+                "es": f"{key[0]} {key[1]}: a las 06:00 ese asiento no tiene dos pasajeros (passengers.jsonl los marca seat_taken)",
+                "en": f"{key[0]} {key[1]}: at 06:00 that seat doesn't have two passengers (passengers.jsonl marks them seat_taken)",
             }[_lang()]
         )
-    elif sorted(s.get("passengers") or []) != doubles[key]:
+    elif len(set(s.get("passengers") or [])) != 2 or not set(s["passengers"]) <= set(doubles[key]):
         seat.fail(
             {
-                "es": f"{key[0]} {key[1]} sí, pero los pasajeros que lo tienen no son esos",
-                "en": f"{key[0]} {key[1]} is right, but those aren't the passengers who hold it",
+                "es": f"{key[0]} {key[1]} sí, pero esos no son dos de los pasajeros que lo tienen a las 06:00",
+                "en": f"{key[0]} {key[1]} is right, but those aren't two of the passengers who hold it at 06:00",
             }[_lang()]
         )
     else:
