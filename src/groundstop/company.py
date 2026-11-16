@@ -31,6 +31,14 @@ class Company:
     gateways: dict[str, AgentSpec]  # systems that send messages to agents (weather, app, SMS replies)
     scopes: dict[str, list[str]]  # "system.op" → agents allowed to call it
     policy: dict[str, int]
+    people: dict[str, dict[str, str]] = field(default_factory=dict)  # person → {"team", "role"}
+
+    def person_of(self, team: str, role: str = "developer") -> str:
+        """The first person of a team with a role (who publishes that team's agents, say)."""
+        return next(p for p, info in self.people.items() if info["team"] == team and info["role"] == role)
+
+    def first_with(self, role: str) -> str:
+        return next(p for p, info in self.people.items() if info["role"] == role)
 
 
 def _read(name: str) -> dict:
@@ -67,6 +75,7 @@ def load_company() -> Company:
         gateways=gateways,
         scopes=_read("scopes.toml")["systems"],
         policy=_read("compensation-policy.toml"),
+        people={p["id"]: {"team": p["team"], "role": p["role"]} for p in _read("people.toml")["people"]},
     )
 
 

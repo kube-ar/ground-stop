@@ -30,7 +30,8 @@ class Workspace:
 
     def submit(self, msg: Message) -> None:
         """A sender hands over a message. To an agent inside Fragata: keep it until it's handled.
-        To a partner outside: deliver it over the network (env.reach), trying again if nobody answers."""
+        To a partner outside: deliver it over the network (env.reach), trying again if nobody answers.
+        If the directory has no address for it at all, refuse it (env.refused): there's nobody to keep it for."""
         raise NotImplementedError
 
     def next_for(self, agent: str) -> Message | None:

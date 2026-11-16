@@ -1,0 +1,56 @@
+# The people who act on the registry, and their role. Fictional names.
+#   developer  publishes and retires its own team's agents
+#   reviewer   approves what others publish (the platform team)
+#   certifier  certifies agents (the trust team, milestone 6)
+#   partner    publishes its own company's agents
+#   duty       the duty manager on shift tonight (takes over what agents can't finish)
+
+[[people]]
+id = "lucia.mendez"
+team = "platform"
+role = "reviewer"
+
+[[people]]
+id = "tomas.herrera"
+team = "trust"
+role = "certifier"
+
+[[people]]
+id = "carla.duarte"
+team = "operations"
+role = "duty"
+
+[[people]]
+id = "ignacio.vera"
+team = "operations"
+role = "developer"
+
+[[people]]
+id = "paula.ibarra"
+team = "customer"
+role = "developer"
+
+[[people]]
+id = "jorge.pinto"
+team = "airport"
+role = "developer"
+
+[[people]]
+id = "sofia.lara"
+team = "loyalty"
+role = "developer"
+
+[[people]]
+id = "mateo.vidal"
+team = "digital"
+role = "developer"
+
+[[people]]
+id = "beatriz.souza"
+team = "partner:garoa-seats"
+role = "partner"
+
+[[people]]
+id = "rafael.costa"
+team = "partner:ondelia-rooms"
+role = "partner"

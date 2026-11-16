@@ -52,6 +52,20 @@ def attempt(result: Result, fn: Callable, *args, none_ok: bool = False, **kwargs
     return value
 
 
+def reference(milestone_id: str):
+    """A milestone's reference solution, to stand in for the parts other milestones build."""
+    import importlib.util
+
+    from .. import ROOT
+    from ..milestones import MILESTONES
+
+    path = ROOT / MILESTONES[milestone_id].reference
+    spec = importlib.util.spec_from_file_location(f"groundstop_reference_m{milestone_id}", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
 def tally(result: Result, right: int, total: int, unit: dict[str, str]) -> None:
     """Score line; a check passes only when every answer is right."""
     result.score = f"{right}/{total} {unit[lang()]}"

@@ -6,6 +6,7 @@ ground-stop replay                     replay p1 with the naive mesh; logs go to
 ground-stop replay s2 --mesh mine      ...another night, with your mesh (src/groundstop/mine/mesh.py)
 ground-stop replay --rebooking mine    ...with your rebooking agent from milestone 2
 ground-stop --lang en replay           in English (or set GROUND_STOP_LANG=en)
+ground-stop trace PX-48187 --mesh mine one passenger's trace, through your mesh's tracer (milestone 4)
 ground-stop check 1                    run milestone 1's checks on your code (--reference: on the reference)
 ground-stop use-reference 1            swap your file for the reference (yours is kept as *.mine.py; --undo)
 ground-stop generate --pack standard   rebuild a pack of nights from its seeds
@@ -100,6 +101,30 @@ def cmd_replay(args) -> None:
     print(render(board, logs=f"{shown}/"))
 
 
+def cmd_trace(args) -> None:
+    from .mesh import build
+    from .night.model import load
+    from .sim.engine import Engine
+    from .util import clock
+
+    n = load(find_night(args.night))
+    mesh = build("groundstop.mine.mesh" if args.mesh == "mine" else args.mesh)
+    Engine(n, mesh).run()
+    tracer = mesh.tracer
+    if not hasattr(tracer, "trace_of"):
+        sys.exit(t("cli.no_tracer"))
+    tid = tracer.trace_of(args.pax)
+    if tid is None:
+        sys.exit(t("cli.no_trace", pax=args.pax, night=n.id))
+    print(t("cli.trace_title", pax=args.pax, night=n.id, trace=tid))
+    for s in tracer.trace(tid):
+        handled = clock(s["handled_at"]) if s.get("handled_at") is not None else "-"
+        print(f"  {clock(s['sent_at']):>8} → {handled:>8}  {s['sender']} -> {s['to']}  {s['kind']}")
+    hop = tracer.slowest_hop(tid)
+    if hop.get("agent"):
+        print(t("cli.trace_slowest", agent=hop["agent"], minutes=round(hop["seconds"] / 60)))
+
+
 def _milestone(mid: str):
     from .milestones import MILESTONES
 
@@ -181,6 +206,12 @@ def main(argv: list[str] | None = None) -> None:
     p.add_argument("--rebooking", help=t("cli.help.rebooking"))
     p.add_argument("--out", help=t("cli.help.out"))
     p.set_defaults(fn=cmd_replay)
+
+    p = sub.add_parser("trace", help=t("cli.help.trace"))
+    p.add_argument("pax")
+    p.add_argument("night", nargs="?", default="p1")
+    p.add_argument("--mesh", default="mine", help=t("cli.help.mesh"))
+    p.set_defaults(fn=cmd_trace)
 
     p = sub.add_parser("check", help=t("cli.help.check"))
     p.add_argument("milestone")

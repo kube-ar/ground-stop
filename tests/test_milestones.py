@@ -219,3 +219,65 @@ def test_m3_wrong_workspaces_fail():
         (OnlyFragatasSide, "Who did what"),
     ]:
         assert check in _failing("3", with_workspace(cls)), check
+
+
+def test_m4_wrong_implementations_fail():
+    ref = reference("4")
+
+    class AnyoneApproves(ref.Registry):
+        def approve(self, agent, version, by):
+            pending = next((r for r in self.records if r["id"] == agent and r["version"] == version), None)
+            if pending:
+                for r in self.records:
+                    if r["id"] == agent and r["status"] == "active":
+                        r["status"] = "superseded"
+                pending["status"] = "active"
+            return self._note("approve", agent, version, by, pending is not None)
+
+    class KeepsFirstAddress(ref.Registry):
+        def resolve(self, caller, name):
+            if name.startswith(("http://", "https://")):
+                return name
+            first = next((r for r in self.records if r["id"] == name and r["status"] in ("active", "superseded")), None)
+            return first["address"] if first else None
+
+    class AlwaysFindsSomeone(ref.Registry):
+        def find(self, caller, purpose):
+            want = ref.words(purpose)
+            ranked = sorted(
+                (r for r in self.records if r["status"] == "active" and r["id"] != caller),
+                key=lambda r: -len(want & ref.words(r["purpose"])),
+            )
+            return ranked[0]["id"] if ranked else None
+
+    class TraceEveryMessage(ref.Tracer):
+        def stamp(self, msg, parent):
+            msg.trace = f"T-{msg.id}"
+            self.spans[msg.id] = {
+                "id": msg.id,
+                "parent": msg.parent,
+                "sender": msg.sender,
+                "to": msg.to,
+                "kind": msg.kind,
+                "sent_at": msg.sent_at,
+                "handled_at": None,
+                "trace": msg.trace,
+            }
+            self.order.setdefault(msg.trace, []).append(msg.id)
+            if isinstance(msg.body.get("pax"), str):
+                self.by_pax.setdefault(msg.body["pax"], msg.trace)
+
+    class QueueTimeOnly(ref.Tracer):
+        def slowest_hop(self, trace_id):
+            spans = [s for s in self.trace(trace_id) if s["handled_at"] is not None]
+            s = max(spans, key=lambda s: s["handled_at"] - s["sent_at"])
+            return {"agent": s["to"], "seconds": s["handled_at"] - s["sent_at"]}
+
+    for fns, check in [
+        ({"Registry": AnyoneApproves}, "Publishing needs a review"),
+        ({"Registry": KeepsFirstAddress}, "By name, not by address"),
+        ({"Registry": AlwaysFindsSomeone}, "Discovery returns one agent"),
+        ({"Tracer": TraceEveryMessage}, "One trace per passenger"),
+        ({"Tracer": QueueTimeOnly}, "Where the time went"),
+    ]:
+        assert check in _failing("4", patched(ref, **fns)), check

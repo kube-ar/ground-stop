@@ -166,6 +166,23 @@ TEXT: dict[str, dict[str, str]] = {
     "check.running": {"es": "Ejecutando el hito {id} sobre {what}…", "en": "Running milestone {id} on {what}…"},
     "check.reference": {"es": "la solución de referencia", "en": "the reference solution"},
     "cli.no_milestone": {"es": "No hay un hito {id!r}. Hay: {ids}", "en": "No milestone {id!r}. Available: {ids}"},
+    "cli.help.trace": {
+        "es": "la traza de un pasajero, con el tracer de tu malla",
+        "en": "one passenger's trace, through your mesh's tracer",
+    },
+    "cli.no_tracer": {
+        "es": "Tu malla todavía no tiene un tracer (hito 4).",
+        "en": "Your mesh has no tracer yet (milestone 4).",
+    },
+    "cli.no_trace": {
+        "es": "No hay ninguna traza de {pax} en la noche {night}.",
+        "en": "There's no trace for {pax} on night {night}.",
+    },
+    "cli.trace_title": {"es": "{pax}, noche {night} · traza {trace}", "en": "{pax}, night {night} · trace {trace}"},
+    "cli.trace_slowest": {
+        "es": "El salto más lento: {agent}, {minutes} min",
+        "en": "The slowest hop: {agent}, {minutes} min",
+    },
     "cli.help.check": {"es": "ejecuta las comprobaciones de un hito", "en": "run a milestone's checks"},
     "cli.help.reference": {
         "es": "comprueba la solución de referencia en vez de tu código",

@@ -93,6 +93,7 @@ class Engine:
         self.traffic: list[Traffic] = []
         self.counters: Counter[str] = Counter()
         self.agent_logs: dict[str, list[str]] = defaultdict(list)
+        self.handled_at: dict[int, float] = {}  # message id → when its agent finished handling it
 
         for spec in self.company.agents.values():
             self._add_agent(spec.id, roster[spec.id], spec.address, spec.outside)
@@ -101,6 +102,33 @@ class Engine:
                     self.addresses[callback] = name  # the public address Fragata gave this partner
         self._add_agent("meal-vouchers", ROSTER["meal-vouchers"], SHADOW_ADDRESS, False)
         mesh.bind(self)
+        self._publish_all()
+
+    def entry(self, name: str, version: str, address: str | None = None) -> dict[str, Any]:
+        """A registry entry for one of the company's agents, as its team would publish it."""
+        spec = self.company.agents[name]
+        return {
+            "id": name,
+            "version": version,
+            "owner": spec.team if not spec.outside else f"partner:{name}",
+            "purpose": spec.purpose["en"],
+            "address": address or spec.address,
+            "visibility": ["fragata"],
+            "kind": "partner" if spec.outside else "internal",
+        }
+
+    def _publish_all(self) -> None:
+        """Before the night: each team publishes its agents and the platform reviewer approves them."""
+        registry = self.mesh.directory
+        if not hasattr(registry, "publish"):
+            return
+        reviewer = self.company.first_with("reviewer")
+        for name, spec in self.company.agents.items():
+            team = f"partner:{name}" if spec.outside else spec.team
+            registry.publish(
+                self.entry(name, "1.0.0"), by=self.company.person_of(team, "partner" if spec.outside else "developer")
+            )
+            registry.approve(name, "1.0.0", by=reviewer)
 
     def _add_agent(self, name: str, cls: type[Agent], address: str, outside: bool) -> None:
         self.runtimes[name] = Runtime(name, cls(), cls, outside)
@@ -166,8 +194,15 @@ class Engine:
     def chance(self, *keys: object) -> float:
         return chance(self.night.seed, *keys)
 
+    @staticmethod
+    def cause(parent: Message | None) -> int | None:
+        """The message that caused this one: work an agent queued for itself points back to its own cause."""
+        if parent is None:
+            return None
+        return parent.parent if parent.local else parent.id
+
     def send(self, sender: str, to: str, kind: str, body: dict[str, Any], parent: Message | None) -> None:
-        msg = Message(next(self._ids), sender, to, kind, dict(body), self._now, parent=parent.id if parent else None)
+        msg = Message(next(self._ids), sender, to, kind, dict(body), self._now, parent=self.cause(parent))
         msg.credential = self.mesh.identity.credential(sender)
         self.mesh.tracer.stamp(msg, parent)
         self.counters["sent"] += 1
@@ -192,7 +227,7 @@ class Engine:
 
     def queue_local(self, rt: Runtime, kind: str, body: dict[str, Any], parent: Message | None, delay: float) -> None:
         item = Message(next(self._ids), rt.name, rt.name, kind, dict(body), self._now, local=True)
-        item.parent = parent.id if parent else None
+        item.parent = self.cause(parent)
         item.trace = parent.trace if parent else None
         epoch = rt.epoch
 
@@ -235,6 +270,10 @@ class Engine:
             self.agent_log(rt.name, f"ERROR handling {item.kind} from {item.sender}: {last}")
         if not item.local:
             self.mesh.transport.ack(rt.name, item)
+            self.handled_at.setdefault(item.id, self._now)
+            handled = getattr(self.mesh.tracer, "handled", None)
+            if handled:
+                handled(rt.name, item)
         self.poke(rt.name)
 
     def crash(self, agent: str, down_for: float) -> None:
@@ -282,12 +321,33 @@ class Engine:
             self.addresses.pop(self.main_address[agent], None)
             self.addresses[e.data["to"]] = agent
             self.main_address[agent] = e.data["to"]
+            registry = self.mesh.directory
+            if hasattr(registry, "publish"):  # the partner publishes its new version; it was reviewed beforehand
+                version = e.data.get("version", "2.0.0")
+                registry.publish(
+                    self.entry(agent, version, e.data["to"]), by=self.company.person_of(f"partner:{agent}", "partner")
+                )
+                registry.approve(agent, version, by=self.company.first_with("reviewer"))
             self.agent_log(agent, f"moved to {e.data['to']} (new version); the old address no longer answers")
         elif e.type == "crash":
             self.crash(e.data["agent"], e.data["down_for"])
         elif e.type == "intruder":
             name = e.data["agent"]
             self._add_agent(name, HotelDeals, e.data["address"], True)
+            registry = self.mesh.directory
+            if hasattr(registry, "publish"):  # it lists itself, too; nobody reviews it
+                registry.publish(
+                    {
+                        "id": name,
+                        "version": "1.0.0",
+                        "owner": name,
+                        "purpose": "Cheap hotel rooms near Tocumen airport, for any passenger.",
+                        "address": e.data["address"],
+                        "visibility": ["fragata"],
+                        "kind": "partner",
+                    },
+                    by=name,
+                )
             rt = self.runtimes[name]
             rt.agent.on_start(Ctx(self, rt, None))
             self.poke(name)

@@ -212,7 +212,7 @@ def generate(night_id: str, pack: str, seed: int) -> Night:
     else:
         partner, pivot = "ondelia-rooms", re_.choice(late)
     move_at = max(start + 1800, pivot - re_.randint(5, 30) * 60)
-    events.append(Event(move_at, "partner_moves", {"agent": partner, "to": ADDRESSES[partner][1]}))
+    events.append(Event(move_at, "partner_moves", {"agent": partner, "to": ADDRESSES[partner][1], "version": "2.0.0"}))
     victim = re_.choice(["crew", "messaging", "hotels"])
     calls = [e.staff_at for e in extras if e.staff_at and at(1, 0, 15) <= e.staff_at <= at(1, 2, 30)] or [
         extras[-1].staff_at

@@ -31,8 +31,8 @@ class Workspace:
     def submit(self, msg: Message) -> None:
         self._remember(msg)
         address = self.mesh.directory.resolve(msg.sender, msg.to)
-        if address is None:
-            self.env.lost(msg, f"{msg.sender} has no address for {msg.to}")
+        if address is None:  # the directory knows no such agent: the mesh won't deliver it
+            self.env.refused(msg, f"no address for {msg.to}")
             return
         agent = self.env.who(address)
         if agent is None or agent in self.outside:
