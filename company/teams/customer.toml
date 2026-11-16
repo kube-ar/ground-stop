@@ -1,0 +1,28 @@
+# Customer: everything a passenger sees after a cancellation.
+id = "customer"
+name = { es = "Clientes", en = "Customer" }
+
+[[agents]]
+id = "rebooking"
+purpose = { es = "Busca un vuelo nuevo para cada pasajero de un vuelo cancelado y lo reserva.", en = "Finds a new flight for each passenger on a cancelled flight and books it." }
+address = "http://rebooking.customer.fragata.internal:8080"
+[agents.calls]
+messaging = "http://messaging.customer.fragata.internal:8080"
+compensation = "http://compensation.customer.fragata.internal:8080"
+hotels = "http://hotels.airport.fragata.internal:8080"
+baggage = "http://baggage.airport.fragata.internal:8080"
+garoa-seats = "https://agents.garoa.example/seats/v2"
+
+[[agents]]
+id = "messaging"
+purpose = { es = "Escribe a cada pasajero en su idioma (SMS y app) y recibe sus respuestas.", en = "Writes to each passenger in their language (SMS and app) and receives their replies." }
+address = "http://messaging.customer.fragata.internal:8080"
+[agents.calls]
+compensation = "http://compensation.customer.fragata.internal:8080"
+
+[[agents]]
+id = "compensation"
+purpose = { es = "Emite los vouchers que corresponden según la política de compensaciones.", en = "Issues the vouchers the compensation policy entitles each passenger to." }
+address = "http://compensation.customer.fragata.internal:8080"
+[agents.calls]
+meal-vouchers = "http://10.40.7.21:8080"

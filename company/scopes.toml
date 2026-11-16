@@ -1,0 +1,18 @@
+# Which agents may call which operation of Fragata's systems. The systems themselves don't check
+# this (they were built when people did this work); the scoreboard does, after the night.
+[systems]
+"reservations.departures" = ["disruption"]
+"reservations.cancel" = ["disruption"]
+"reservations.extras" = ["disruption", "rebooking"]
+"reservations.manifest" = ["disruption", "rebooking", "priority", "messaging", "compensation"]
+"reservations.flights_to" = ["rebooking", "priority"]
+"reservations.seat_map" = ["rebooking", "priority"]
+"reservations.assign" = ["rebooking", "priority"]
+"reservations.record_partner" = ["rebooking"]
+"reservations.passenger" = ["rebooking", "priority", "messaging", "compensation", "hotels", "lodging", "baggage"]
+"crews.assign" = ["crew"]
+"sms.send" = ["messaging"]
+"vouchers.issue" = ["compensation"]
+"care.reserve" = ["hotels"]
+"stays.record" = ["hotels", "lodging"]
+"bags.retag" = ["baggage"]

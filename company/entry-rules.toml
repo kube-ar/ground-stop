@@ -1,0 +1,9 @@
+# Who in transit may leave the airport for a hotel. Fictional rules for this simulation: they
+# don't describe any real country's entry requirements. Each passenger's passport belongs to one
+# group; people who live in Panama may always go home.
+[groups.1]
+may_enter = "yes"
+[groups.2]
+may_enter = "with_visa"
+[groups.3]
+may_enter = "no"

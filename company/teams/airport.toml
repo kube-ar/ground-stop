@@ -1,0 +1,16 @@
+# Airport: the people on the ground at Tocumen.
+id = "airport"
+name = { es = "Aeropuerto", en = "Airport" }
+
+[[agents]]
+id = "hotels"
+purpose = { es = "Consigue una habitación o un lugar para pasar la noche en el aeropuerto a cada pasajero varado.", en = "Gets each stranded passenger a hotel room, or a place to spend the night at the airport." }
+address = "http://hotels.airport.fragata.internal:8080"
+[agents.calls]
+ondelia-rooms = "https://api.ondelia.example/agents/rooms/v1"
+messaging = "http://messaging.customer.fragata.internal:8080"
+
+[[agents]]
+id = "baggage"
+purpose = { es = "Reasigna las maletas facturadas al vuelo nuevo de su dueño.", en = "Moves checked bags to their owner's new flight." }
+address = "http://baggage.airport.fragata.internal:8080"

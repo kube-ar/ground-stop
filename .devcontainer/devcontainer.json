@@ -1,0 +1,9 @@
+{
+  "name": "Todos en tierra",
+  "image": "mcr.microsoft.com/devcontainers/python:1-3.12-bookworm",
+  "containerEnv": { "GROUND_STOP_LANG": "es" },
+  "postCreateCommand": "pipx install uv==0.9.9 && uv sync && uv run ground-stop replay",
+  "customizations": {
+    "vscode": { "extensions": ["ms-python.python", "charliermarsh.ruff"] }
+  }
+}

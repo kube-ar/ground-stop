@@ -1,0 +1,129 @@
+"""`ground-stop`: replay a night through a mesh and read the scoreboard.
+
+ground-stop nights                     the nights in this repo
+ground-stop show p1                    what happens on a night (the practice nights tell you in advance)
+ground-stop replay                     replay p1 with the naive mesh; logs go to runs/p1/
+ground-stop replay s2 --mesh mymod     ...another night, with your own mesh (a module whose build() returns one)
+ground-stop --lang en replay           in English (or set GROUND_STOP_LANG=en)
+ground-stop generate --pack standard   rebuild a pack of nights from its seeds
+"""
+
+from __future__ import annotations
+
+import argparse
+import sys
+from pathlib import Path
+
+from . import NIGHTS, ROOT, RUNS
+from .i18n import LANGS, num, set_lang, t
+from .util import hhmm
+
+
+def find_night(night_id: str) -> Path:
+    for path in sorted(NIGHTS.glob(f"*/{night_id}.json")):
+        return path
+    sys.exit(t("cli.no_night", night=night_id))
+
+
+def cmd_nights(args) -> None:
+    from .night.model import load
+
+    print(t("cli.nights.header"))
+    for pack in ("practice", "standard", "final"):
+        for path in sorted((NIGHTS / pack).glob("*.json")):
+            n = load(path)
+            print(
+                f"{n.id:<6} {t(f'pack.{pack}'):<10} {hhmm(n.storm_start):<9} {len(n.cancelled):<7} {num(len(n.passengers))}"
+            )
+
+
+def cmd_show(args) -> None:
+    from .night.model import load
+    from .night.places import DESTINATIONS
+
+    n = load(find_night(args.night))
+    print(t("show.title", night=n.id, pack=t(f"pack.{n.pack}"), start=hhmm(n.storm_start)))
+    print()
+    print(t("show.flights"))
+    for f in sorted(n.cancelled, key=lambda f: f.dep):
+        pax = sum(1 for p in n.passengers if p.flight == f.id)
+        city = DESTINATIONS[f.dest][0]
+        print(
+            f"  {f.id:<6} {hhmm(f.dep)}  {f.dest} {city:<24} {f.aircraft:<5} {t('show.pax', pax=pax):<16} {t('show.cancel_at', at=hhmm(f.cancel_at))}"
+        )
+    extras = [f for f in n.flights if f.kind == "extra"]
+    print()
+    print(t("show.extras", count=len(extras), crews=len(n.crews)))
+    print(t("show.hotels", rooms=num(sum(h.rooms for h in n.hotels)), care=num(n.airside_care)))
+    print()
+    if n.pack == "practice":
+        print(t("show.events"))
+        for e in n.events:
+            data = dict(e.data)
+            if "down_for" in data:
+                data["minutes"] = data["down_for"] // 60
+            print(f"  {hhmm(e.at)}  {t(f'event.{e.type}', **data)}")
+    else:
+        print(t("show.hidden"))
+
+
+def cmd_replay(args) -> None:
+    from .mesh import build
+    from .night.model import load
+    from .score import mesh_name, render, score, write
+    from .sim.engine import Engine
+
+    n = load(find_night(args.night))
+    mesh = build(args.mesh)
+    print(t("cli.replaying", night=n.id, mesh=mesh_name(mesh.name)))
+    engine = Engine(n, mesh).run()
+    board = score(engine)
+    out = Path(args.out) if args.out else RUNS / n.id
+    engine.write_logs(out)
+    write(board, out)
+    try:
+        shown = out.resolve().relative_to(ROOT)
+    except ValueError:
+        shown = out
+    print()
+    print(render(board, logs=f"{shown}/"))
+
+
+def cmd_generate(args) -> None:
+    from .night.generate import generate_pack
+
+    nights = generate_pack(args.pack, NIGHTS)
+    print(t("cli.generated", count=len(nights), path=f"nights/{args.pack}/"))
+
+
+def main(argv: list[str] | None = None) -> None:
+    argv = list(sys.argv[1:] if argv is None else argv)
+    for i, a in enumerate(argv):  # the language is needed before the help texts are built
+        if a == "--lang" and i + 1 < len(argv) and argv[i + 1] in LANGS:
+            set_lang(argv[i + 1])
+        elif a.startswith("--lang=") and a.split("=", 1)[1] in LANGS:
+            set_lang(a.split("=", 1)[1])
+
+    parser = argparse.ArgumentParser(prog="ground-stop", description=t("cli.description"))
+    parser.add_argument("--lang", choices=LANGS, help=t("cli.lang"))
+    sub = parser.add_subparsers(dest="command", required=True)
+
+    p = sub.add_parser("nights", help=t("cli.help.nights"))
+    p.set_defaults(fn=cmd_nights)
+
+    p = sub.add_parser("show", help=t("cli.help.show"))
+    p.add_argument("night", nargs="?", default="p1")
+    p.set_defaults(fn=cmd_show)
+
+    p = sub.add_parser("replay", help=t("cli.help.replay"))
+    p.add_argument("night", nargs="?", default="p1")
+    p.add_argument("--mesh", default="naive", help=t("cli.help.mesh"))
+    p.add_argument("--out", help=t("cli.help.out"))
+    p.set_defaults(fn=cmd_replay)
+
+    p = sub.add_parser("generate", help=t("cli.help.generate"))
+    p.add_argument("--pack", required=True, choices=["practice", "standard", "final"])
+    p.set_defaults(fn=cmd_generate)
+
+    args = parser.parse_args(argv)
+    args.fn(args)

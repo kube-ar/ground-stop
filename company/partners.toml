@@ -1,0 +1,19 @@
+# Partners outside Fragata. Their agents answer at the addresses below and call back the agents
+# that wrote to them, at the addresses Fragata gave them.
+
+[[agents]]
+id = "garoa-seats"
+partner = "Garoa Linhas Aéreas"
+purpose = { es = "Vende asientos de Garoa a pasajeros de otras aerolíneas con tarifa interlínea.", en = "Sells Garoa seats to other airlines' passengers with an interline fare." }
+address = "https://agents.garoa.example/seats/v2"
+[agents.calls]
+rebooking = "https://partners.fragata.example/rebooking"
+
+[[agents]]
+id = "ondelia-rooms"
+partner = "Hoteles Ondelia"
+purpose = { es = "Reserva habitaciones en los hoteles Ondelia de Ciudad de Panamá.", en = "Books rooms at the Ondelia hotels in Panama City." }
+address = "https://api.ondelia.example/agents/rooms/v1"
+[agents.calls]
+hotels = "https://partners.fragata.example/hotels"
+lodging = "https://partners.fragata.example/lodging"

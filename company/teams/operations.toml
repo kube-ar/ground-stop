@@ -1,0 +1,25 @@
+# Operations: the control center. Decides what flies and who crews it.
+id = "operations"
+name = { es = "Operaciones", en = "Operations" }
+
+[[agents]]
+id = "disruption"
+purpose = { es = "Decide qué vuelos se cancelan cuando el tiempo cierra el aeropuerto y pide vuelos extra.", en = "Decides which flights are cancelled when weather closes the airport, and asks for extra flights." }
+address = "http://disruption.ops.fragata.internal:8080"
+[agents.calls]
+crew = "http://crew.ops.fragata.internal:8080"
+rebooking = "http://rebooking.customer.fragata.internal:8080"
+priority = "http://priority.loyalty.fragata.internal:8080"
+messaging = "http://messaging.customer.fragata.internal:8080"
+[agents.publishes]
+flight-events = ["rebooking", "priority", "messaging"]
+
+[[agents]]
+id = "crew"
+purpose = { es = "Asigna tripulaciones de reserva a los vuelos extra, respetando los límites de servicio.", en = "Assigns reserve crews to extra flights, within duty-time limits." }
+address = "http://crew.ops.fragata.internal:8080"
+[agents.calls]
+rebooking = "http://rebooking.customer.fragata.internal:8080"
+disruption = "http://disruption.ops.fragata.internal:8080"
+[agents.publishes]
+crew-events = ["rebooking", "disruption"]

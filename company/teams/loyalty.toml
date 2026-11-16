@@ -1,0 +1,13 @@
+# Loyalty: Club Fragata, the frequent flyer program.
+id = "loyalty"
+name = { es = "Club Fragata", en = "Club Fragata (loyalty)" }
+
+[[agents]]
+id = "priority"
+purpose = { es = "Atiende primero a los socios Oro y Platino: mejor vuelo, hotel y un gesto de cortesía.", en = "Looks after Gold and Platinum members first: best flight, a hotel and a goodwill gesture." }
+address = "http://priority.loyalty.fragata.internal:8080"
+[agents.calls]
+messaging = "http://messaging.customer.fragata.internal:8080"
+lodging = "http://lodging.digital.fragata.internal:8080"
+baggage = "http://baggage.airport.fragata.internal:8080"
+compensation = "http://compensation.customer.fragata.internal:8080"

@@ -1,0 +1,12 @@
+# Digital: the Fragata app and website.
+id = "digital"
+name = { es = "Digital", en = "Digital" }
+
+[[agents]]
+id = "lodging"
+purpose = { es = "Reserva hotel desde la app cuando el pasajero lo pide.", en = "Books a hotel from the app when the passenger asks." }
+address = "http://lodging.digital.fragata.internal:8080"
+[agents.calls]
+ondelia-rooms = "https://api.ondelia.example/agents/rooms/v1"
+messaging = "http://messaging.customer.fragata.internal:8080"
+hotels = "http://hotels.airport.fragata.internal:8080"

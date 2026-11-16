@@ -1,0 +1,18 @@
+# Systems that start conversations: they aren't agents, but they send messages to agents.
+[[gateways]]
+id = "weather"
+purpose = { es = "Avisos meteorológicos del aeropuerto.", en = "Airport weather alerts." }
+[gateways.calls]
+disruption = "http://disruption.ops.fragata.internal:8080"
+
+[[gateways]]
+id = "app"
+purpose = { es = "La app de Fragata.", en = "The Fragata app." }
+[gateways.calls]
+lodging = "http://lodging.digital.fragata.internal:8080"
+
+[[gateways]]
+id = "sms-gateway"
+purpose = { es = "SMS que responden los pasajeros.", en = "Text messages passengers send back." }
+[gateways.calls]
+messaging = "http://messaging.customer.fragata.internal:8080"

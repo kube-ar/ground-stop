@@ -3,29 +3,87 @@
 *[English below](#ground-stop)*
 
 A las 18:00 una tormenta cierra el aeropuerto de Tocumen, en Ciudad de Panamá, el centro de
-conexiones de Fragata. Se cancelan los vuelos y miles de pasajeros en tránsito quedan varados.
-Once agentes de cinco equipos y dos socios externos (Garoa Linhas Aéreas y Hoteles Ondelia)
-tienen que reubicar a cada pasajero antes de las 06:00: un asiento, una habitación o atención en
-el aeropuerto. Nunca nadie los hizo trabajar juntos.
+conexiones de Fragata. Operaciones cancela las salidas de la noche en tandas, y miles de pasajeros
+en tránsito quedan varados. Once agentes de cinco equipos y dos socios externos (Garoa Linhas Aéreas
+y Hoteles Ondelia) tienen que reubicar a cada pasajero antes de las 06:00: un asiento válido, una
+noche bajo techo y un mensaje con su vuelo nuevo. Nunca nadie los hizo trabajar juntos.
 
-No vas a construir esos agentes: ya existen y son de otros equipos. Eres el equipo de
-plataforma, y construyes la malla que los conecta: un espacio de trabajo compartido, un registro
-y un buscador de agentes, trazas que siguen una solicitud de punta a punta, identidad y permisos
-para cada agente, certificación, cuarentena y una fábrica de agentes nuevos. Es el proyecto del
-curso [Malla agéntica](https://kube.ar/es/agentic-mesh).
+No vas a construir esos agentes: ya existen y son de otros equipos. Eres el equipo de plataforma,
+y construyes la malla que los conecta: un espacio de trabajo compartido, un registro y un buscador
+de agentes, trazas que siguen una solicitud de punta a punta, identidad y permisos para cada agente,
+certificación, cuarentena y una fábrica de agentes nuevos. Es el proyecto del curso
+[Malla agéntica](https://kube.ar/es/agentic-mesh).
 
-Cada noche se genera desde una semilla, así que la verdad siempre se conoce: qué asientos y
-habitaciones había, qué podía pasarle a cada pasajero. Por eso las comprobaciones son exactas y
-ninguna necesita un modelo de lenguaje.
+## Empezar
 
-> **Estado:** en construcción. Todavía no hay código; las instrucciones de cada hito se publicarán
-> en el sitio, junto a las lecciones que usa.
+Elige una de las tres formas. Las tres reproducen la noche `p1` con la malla que Fragata tiene hoy
+y muestran el marcador.
+
+| Con | Qué hacer |
+|---|---|
+| [uv](https://docs.astral.sh/uv/) y Python 3.12 o más nuevo | `uv sync`, después `uv run ground-stop replay` |
+| Docker | `docker compose up` |
+| GitHub Codespaces | *Code → Codespaces → Create codespace*: se instala y reproduce `p1` sola |
+
+Esto es lo que sale con la malla ingenua, la de hoy:
+
+```text
+Todos en tierra · noche p1 (práctica) · malla: ingenua
+Tormenta a las 18:20: 8 vuelos cancelados, 982 pasajeros varados en Tocumen
+
+  Reubicados a las 06:00                        491 / 982   50 %
+  Durmieron en el aeropuerto sin atención       413
+  Sin asiento válido                            209
+  Sin un mensaje con su vuelo final             113
+
+  Asientos vendidos dos veces                   81
+  Mensajes perdidos                             250
+  Enviados a un hotel al que no pueden llegar   112
+  Habitaciones reservadas dos veces             104
+  Habitaciones en un hotel que no existe        392
+  Reservas no válidas                           15
+  Vouchers por encima de lo que corresponde     1.168 (USD 69.515)
+  Acciones no autorizadas                       991
+  Maletas sin reasignar                         22
+```
+
+Cada hito cambia una pieza de la malla, y el mismo marcador muestra qué arreglaste.
+
+## Comandos
+
+| Comando | Qué hace |
+|---|---|
+| `ground-stop nights` | las noches del repositorio: 3 de práctica y 6 estándar |
+| `ground-stop show p1` | qué pasa en una noche (las de práctica lo avisan) |
+| `ground-stop replay s2` | reproduce otra noche |
+| `ground-stop replay p1 --mesh mi_malla` | con tu malla: un módulo cuyo `build()` la devuelve |
+| `ground-stop --lang en replay` | en inglés (o `GROUND_STOP_LANG=en`) |
+
+Con Docker: `docker compose run --rm ground-stop show p1`.
+
+Cada `replay` deja sus registros en `runs/<noche>/`: `traffic.log` (cada mensaje entre agentes, y
+los que se perdieron), `systems.log` (cada llamada a los sistemas de Fragata), `agents/*.log` (lo
+que anota cada agente), `passengers.jsonl` (qué le pasó a cada pasajero) y `scoreboard.json`.
+
+## Cómo está hecho
+
+- **La noche es una simulación**, en un solo proceso y con un reloj simulado. Es determinista: la
+  misma noche con la misma malla da el mismo resultado, línea por línea. Por eso las comprobaciones
+  son exactas y ninguna necesita un modelo de lenguaje.
+- **Los agentes son código de otros equipos** (`src/groundstop/agents/`). Léelos, pero no los
+  cambies. Solo hablan a través del SDK (`ctx.send`, `ctx.publish`, `ctx.call`, `ctx.find`,
+  `ctx.claim`), y el SDK le pasa cada pedido a la malla.
+- **La malla es tuya** (`src/groundstop/mesh/`): directorio, transporte, reclamos de trabajo,
+  identidad, control de acceso y trazas. `naive.py` es la de hoy. Cada hito reemplaza una pieza.
+- **La empresa está en `company/`**: qué agentes declara cada equipo y qué direcciones tiene escritas
+  cada uno, los socios, qué sistema puede llamar cada agente, la política de compensaciones y las
+  reglas de entrada al país (ficticias).
 
 ## Hitos
 
 | # | Hito | Capítulo del curso | Estado |
 |---|---|---|---|
-| 0 | La tormenta: la malla ingenua y su marcador | Por qué un ecosistema | planeado |
+| 0 | La tormenta: la malla ingenua y su marcador | Por qué un ecosistema | en preparación |
 | 1 | Contar los agentes | Por qué un ecosistema | planeado |
 | 2 | Un contrato para reprogramar | Un agente en el que otros confían | planeado |
 | 3 | Nadie duerme en el aeropuerto | Agentes que trabajan juntos | planeado |
@@ -42,10 +100,11 @@ OpenTelemetry).
 
 # Ground Stop
 
-At 18:00 a storm closes Tocumen airport in Panama City, Fragata's connecting hub. Flights are
-cancelled and thousands of passengers in transit are stranded. Eleven agents from five teams and
-two outside partners (Garoa Linhas Aéreas and Hoteles Ondelia) have to rehouse every passenger by
-06:00: a seat, a room, or care at the airport. Nobody has ever made them work together.
+At 18:00 a storm closes Tocumen airport in Panama City, Fragata's connecting hub. Operations
+cancels the night's departures in waves, and thousands of passengers in transit are stranded.
+Eleven agents from five teams and two outside partners (Garoa Linhas Aéreas and Hoteles Ondelia)
+have to rehouse every passenger by 06:00: a valid seat, a night under a roof, and a message with
+their new flight. Nobody has ever made them work together.
 
 You don't build those agents: they already exist and belong to other teams. You're the platform
 team, and you build the mesh that connects them: a shared workspace, a registry and discovery,
@@ -53,16 +112,53 @@ traces that follow one request end to end, identity and permissions for every ag
 certification, quarantine, and a factory for new agents. It's the project for the
 [Agentic Mesh](https://kube.ar/agentic-mesh) course.
 
-Every night is generated from a seed, so the truth is always known: which seats and rooms there
-were, what could happen to each passenger. That's what makes the checks exact, and none of them
-needs a language model.
+## Getting started
 
-> **Status:** under construction. There's no code yet; each milestone's instructions will be
-> published on the site, next to the lessons it uses.
+Pick one of three ways. Each replays night `p1` with the mesh Fragata has today and prints the
+scoreboard (in Spanish by default; add `--lang en` or set `GROUND_STOP_LANG=en`).
+
+| With | Do |
+|---|---|
+| [uv](https://docs.astral.sh/uv/) and Python 3.12 or newer | `uv sync`, then `uv run ground-stop --lang en replay` |
+| Docker | `GROUND_STOP_LANG=en docker compose up` |
+| GitHub Codespaces | *Code → Codespaces → Create codespace*: it installs itself and replays `p1` |
+
+With today's naive mesh, half the passengers on `p1` are rehoused (491 of 982). The rest is the
+scoreboard above: seats sold twice, messages lost, rooms at a hotel that doesn't exist, vouchers
+nobody was entitled to. Each milestone replaces one part of the mesh, and the same scoreboard
+shows what you fixed.
+
+## Commands
+
+| Command | Does |
+|---|---|
+| `ground-stop nights` | the nights in the repo: 3 practice, 6 standard |
+| `ground-stop show p1` | what happens on a night (practice nights tell you) |
+| `ground-stop replay s2` | replay another night |
+| `ground-stop replay p1 --mesh my_mesh` | with your mesh: a module whose `build()` returns it |
+
+Every `replay` leaves its logs in `runs/<night>/`: `traffic.log` (every message between agents,
+and the ones that were lost), `systems.log` (every call to Fragata's systems), `agents/*.log`
+(what each agent notes), `passengers.jsonl` (what happened to each passenger) and
+`scoreboard.json`.
+
+## How it's built
+
+- **The night is a simulation**, in one process on a simulated clock. It's deterministic: the
+  same night with the same mesh gives the same result, line for line. That's why the checks are
+  exact and none needs a language model.
+- **The agents are other teams' code** (`src/groundstop/agents/`). Read them; don't change them.
+  They talk only through the SDK (`ctx.send`, `ctx.publish`, `ctx.call`, `ctx.find`,
+  `ctx.claim`), and the SDK hands every request to the mesh.
+- **The mesh is yours** (`src/groundstop/mesh/`): directory, transport, work claims, identity,
+  access control and tracing. `naive.py` is today's. Each milestone replaces one part.
+- **The company lives in `company/`**: which agents each team declares and which addresses each
+  one has hardcoded, the partners, which system each agent may call, the compensation policy and
+  the (fictional) entry rules.
 
 | # | Milestone | Course chapter | Status |
 |---|---|---|---|
-| 0 | The storm: the naive mesh and its scoreboard | Why an ecosystem | planned |
+| 0 | The storm: the naive mesh and its scoreboard | Why an ecosystem | in progress |
 | 1 | Count the agents | Why an ecosystem | planned |
 | 2 | A contract for rebooking | One agent others can rely on | planned |
 | 3 | Nobody sleeps at the airport | Agents working together | planned |
@@ -74,5 +170,6 @@ needs a language model.
 Fast path: Python and SQLite, about 3–4 hours per milestone (about 20 in all). Deep path: the same
 checks on the infrastructure a company would run (NATS, OPA, step-ca, OpenTelemetry).
 
-Fragata, Garoa Linhas Aéreas, Hoteles Ondelia and every passenger are fictional. Tocumen and
-Panama City are real places; nothing here describes a real airline.
+Fragata, Garoa Linhas Aéreas, Hoteles Ondelia and every passenger are fictional; passenger names
+are random combinations of common first names and surnames. Tocumen, Panama City and the airports
+are real places; nothing here describes a real airline, hotel or country's entry rules.

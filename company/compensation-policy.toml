@@ -1,0 +1,4 @@
+# What a passenger on a cancelled flight is entitled to (fictional policy).
+meal_voucher_usd = 15        # one meal voucher per passenger
+long_delay_hours = 24        # when the new flight leaves this much later than the cancelled one...
+long_delay_usd = 200         # ...one compensation voucher on top
