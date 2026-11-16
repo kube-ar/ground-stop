@@ -88,8 +88,8 @@ Tu código va en `src/groundstop/mine/`, un archivo por hito. `uv run ground-sto
 |---|---|---|---|
 | 0 | [La tormenta](https://kube.ar/es/agentic-mesh/project/ground-stop/the-storm): la malla ingenua y su marcador | Por qué un ecosistema | listo |
 | 1 | [Contar los agentes](https://kube.ar/es/agentic-mesh/project/ground-stop/count-the-agents): las configs contra el tráfico | Por qué un ecosistema | listo |
-| 2 | Un contrato para reprogramar | Un agente en el que otros confían | planeado |
-| 3 | Nadie duerme en el aeropuerto | Agentes que trabajan juntos | planeado |
+| 2 | [Un contrato para reprogramar](https://kube.ar/es/agentic-mesh/project/ground-stop/a-contract-for-rebooking): un plan, su log y un contrato | Un agente en el que otros confían | listo |
+| 3 | [Nadie duerme en el aeropuerto](https://kube.ar/es/agentic-mesh/project/ground-stop/nobody-sleeps-at-the-airport): un espacio de trabajo compartido | Agentes que trabajan juntos | listo |
 | 4 | Ni una dirección fija | Servicios compartidos | planeado |
 | 5 | El hotel falso | Seguridad y confianza | planeado |
 | 6 | Cuarentena | Seguridad y confianza | planeado |
@@ -167,8 +167,8 @@ puts it back).
 |---|---|---|---|
 | 0 | [The storm](https://kube.ar/agentic-mesh/project/ground-stop/the-storm): the naive mesh and its scoreboard | Why an ecosystem | ready |
 | 1 | [Count the agents](https://kube.ar/agentic-mesh/project/ground-stop/count-the-agents): the configs against the traffic | Why an ecosystem | ready |
-| 2 | A contract for rebooking | One agent others can rely on | planned |
-| 3 | Nobody sleeps at the airport | Agents working together | planned |
+| 2 | [A contract for rebooking](https://kube.ar/agentic-mesh/project/ground-stop/a-contract-for-rebooking): a plan, its log and a contract | One agent others can rely on | ready |
+| 3 | [Nobody sleeps at the airport](https://kube.ar/agentic-mesh/project/ground-stop/nobody-sleeps-at-the-airport): a shared workspace | Agents working together | ready |
 | 4 | Find, don't hardcode | Shared services | planned |
 | 5 | The fake hotel | Security and trust | planned |
 | 6 | Quarantine | Security and trust | planned |
