@@ -54,5 +54,6 @@ MILESTONES = {
     for m in [
         _m(0, "the-storm", "La tormenta", "The storm"),
         _m(1, "count-the-agents", "Contar los agentes", "Count the agents"),
+        _m(2, "a-contract-for-rebooking", "Un contrato para reprogramar", "A contract for rebooking"),
     ]
 }

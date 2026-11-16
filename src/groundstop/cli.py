@@ -3,7 +3,8 @@
 ground-stop nights                     the nights in this repo
 ground-stop show p1                    what happens on a night (the practice nights tell you in advance)
 ground-stop replay                     replay p1 with the naive mesh; logs go to runs/p1/
-ground-stop replay s2 --mesh mymod     ...another night, with your own mesh (a module whose build() returns one)
+ground-stop replay s2 --mesh mine      ...another night, with your mesh (src/groundstop/mine/mesh.py)
+ground-stop replay --rebooking mine    ...with your rebooking agent from milestone 2
 ground-stop --lang en replay           in English (or set GROUND_STOP_LANG=en)
 ground-stop check 1                    run milestone 1's checks on your code (--reference: on the reference)
 ground-stop use-reference 1            swap your file for the reference (yours is kept as *.mine.py; --undo)
@@ -76,9 +77,17 @@ def cmd_replay(args) -> None:
     from .sim.engine import Engine
 
     n = load(find_night(args.night))
-    mesh = build(args.mesh)
+    mesh = build("groundstop.mine.mesh" if args.mesh == "mine" else args.mesh)
+    agents = {}
+    if args.rebooking:
+        import importlib
+
+        from .agents.planned import planned_rebooking
+
+        name = "groundstop.mine.m2_a_contract_for_rebooking" if args.rebooking == "mine" else args.rebooking
+        agents["rebooking"] = planned_rebooking(importlib.import_module(name))
     print(t("cli.replaying", night=n.id, mesh=mesh_name(mesh.name)))
-    engine = Engine(n, mesh).run()
+    engine = Engine(n, mesh, agents=agents).run()
     board = score(engine)
     out = Path(args.out) if args.out else RUNS / n.id
     engine.write_logs(out)
@@ -169,6 +178,7 @@ def main(argv: list[str] | None = None) -> None:
     p = sub.add_parser("replay", help=t("cli.help.replay"))
     p.add_argument("night", nargs="?", default="p1")
     p.add_argument("--mesh", default="naive", help=t("cli.help.mesh"))
+    p.add_argument("--rebooking", help=t("cli.help.rebooking"))
     p.add_argument("--out", help=t("cli.help.out"))
     p.set_defaults(fn=cmd_replay)
 

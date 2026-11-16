@@ -73,8 +73,11 @@ def summary(body: dict[str, Any], width: int = 110) -> str:
 
 
 class Engine:
-    def __init__(self, night: Night, mesh: Mesh) -> None:
+    def __init__(self, night: Night, mesh: Mesh, agents: dict[str, type[Agent]] | None = None) -> None:
+        """`agents` replaces some of the roster's agents: from milestone 2, your rebooking agent."""
         from ..agents import ROSTER, SHADOW_ADDRESS
+
+        roster = {**ROSTER, **(agents or {})}
 
         self.night = night
         self.mesh = mesh
@@ -92,7 +95,7 @@ class Engine:
         self.agent_logs: dict[str, list[str]] = defaultdict(list)
 
         for spec in self.company.agents.values():
-            self._add_agent(spec.id, ROSTER[spec.id], spec.address, spec.outside)
+            self._add_agent(spec.id, roster[spec.id], spec.address, spec.outside)
             if spec.outside:
                 for name, callback in spec.calls.items():
                     self.addresses[callback] = name  # the public address Fragata gave this partner

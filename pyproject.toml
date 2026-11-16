@@ -5,7 +5,9 @@ description = "Todos en tierra: a storm closes the hub; build the agent mesh tha
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "jsonschema>=4.23",
+]
 
 [project.scripts]
 ground-stop = "groundstop.cli:main"

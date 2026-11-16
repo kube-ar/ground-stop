@@ -121,3 +121,50 @@ def test_log_readers_read_every_line(tmp_path: Path):
     main(["replay", "p2", "--out", str(tmp_path)])
     for path, reader in [(tmp_path / "traffic.log", traffic), (tmp_path / "systems.log", system_calls)]:
         assert len(reader(path)) == len(path.read_text(encoding="utf-8").splitlines())
+
+
+def test_m2_wrong_implementations_fail():
+    ref = reference("2")
+
+    def observer_contract():
+        return dict(ref.contract(), type="observer")
+
+    def plan_without_fare_rules(request):
+        plan = ref.plan(request)
+        steps = [s for s in plan["steps"] if s["run_by"] != "tool:fare_rules"]
+        for s in steps:
+            if s["run_by"] == "model:choose":
+                s["parameters"]["options"] = {"from": "s1"}
+            s["after"] = [a if a != "s2" else "s1" for a in s["after"]]
+        return dict(plan, steps=steps)
+
+    def contract_without_bags():
+        c = ref.contract()
+        c["input"] = dict(c["input"], required=[f for f in c["input"]["required"] if f != "has_bags"])
+        c["input"]["properties"] = {k: v for k, v in c["input"]["properties"].items() if k != "has_bags"}
+        return c
+
+    def execute_without_sources(plan, tools):
+        return [
+            {**e, "parameters": {k: {"value": v["value"]} for k, v in e["parameters"].items()}}
+            if "parameters" in e
+            else e
+            for e in ref.execute(plan, tools)
+        ]
+
+    def conforms_always_fine(plan, log):
+        return []
+
+    def conforms_counts_only(plan, log):
+        steps = {s["id"] for s in plan["steps"]}
+        return [] if {e["step"] for e in log} == steps else ["missing"]
+
+    for fns, check in [
+        ({"contract": observer_contract}, "The contract"),
+        ({"plan": plan_without_fare_rules}, "A plan a program can check"),
+        ({"contract": contract_without_bags}, "Called from the contract alone"),
+        ({"execute": execute_without_sources}, "The log follows the plan"),
+        ({"conforms": conforms_always_fine}, "Your conformance checker"),
+        ({"conforms": conforms_counts_only}, "Your conformance checker"),
+    ]:
+        assert check in _failing("2", patched(ref, **fns)), check

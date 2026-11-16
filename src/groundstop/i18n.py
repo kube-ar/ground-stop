@@ -90,9 +90,13 @@ TEXT: dict[str, dict[str, str]] = {
         "es": "reproduce una noche y muestra el marcador",
         "en": "replay a night and show the scoreboard",
     },
+    "cli.help.rebooking": {
+        "es": "mine (tu agente de reprogramación del hito 2) o un módulo con plan() y execute()",
+        "en": "mine (your rebooking agent from milestone 2) or a module with plan() and execute()",
+    },
     "cli.help.mesh": {
-        "es": "naive (la de Fragata hoy) o un módulo cuyo build() devuelve tu malla",
-        "en": "naive (Fragata's today) or a module whose build() returns your mesh",
+        "es": "naive (la de Fragata hoy), mine (src/groundstop/mine/mesh.py) o un módulo cuyo build() devuelve una malla",
+        "en": "naive (Fragata's today), mine (src/groundstop/mine/mesh.py) or a module whose build() returns a mesh",
     },
     "cli.help.out": {
         "es": "carpeta para los logs (por defecto runs/<noche>/)",
@@ -183,6 +187,7 @@ TEXT: dict[str, dict[str, str]] = {
         "en": "{path} is now the reference; yours is kept as *.mine.py (--undo puts it back).",
     },
     "mesh.naive": {"es": "ingenua", "en": "naive"},
+    "mesh.mine": {"es": "la tuya", "en": "yours"},
     "pack.practice": {"es": "práctica", "en": "practice"},
     "pack.standard": {"es": "estándar", "en": "standard"},
     "pack.final": {"es": "final", "en": "final"},

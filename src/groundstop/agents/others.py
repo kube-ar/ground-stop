@@ -123,7 +123,7 @@ class GaroaSeats(Agent):
         if msg.kind == "seat_request":
             ctx.reply(msg, "seat_offer", {"dest": b["dest"], "flights": ctx.own_systems.garoa_offer(b["dest"])})
         elif msg.kind == "book":
-            seat = ctx.own_systems.garoa_take(b["flight"], b["pax"])
+            seat = ctx.own_systems.garoa_take(b["flight"], b["pax"], b.get("seat"))
             if seat:
                 dep = ctx.own_systems.night.flight(b["flight"]).dep
                 ctx.reply(msg, "booked", {"pax": b["pax"], "flight": b["flight"], "seat": seat, "dep": dep})

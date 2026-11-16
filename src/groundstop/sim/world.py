@@ -229,16 +229,18 @@ class World:
 
     def garoa_offer(self, dest: str) -> list[dict]:
         return [
-            {"flight": f.id, "dep": f.dep, "free": len(self.garoa_free[f.id])}
+            {"flight": f.id, "dep": f.dep, "free": len(self.garoa_free[f.id]), "seats": list(self.garoa_free[f.id])}
             for f in self.night.flights
             if f.airline == "garoa" and f.dest == dest and self.garoa_free[f.id]
         ]
 
-    def garoa_take(self, flight: str, pax: str) -> str | None:
+    def garoa_take(self, flight: str, pax: str, seat: str | None = None) -> str | None:
+        """Sell a seat: the one asked for (from an offer), or the next free one."""
         free = self.garoa_free.get(flight)
-        if not free:
+        if not free or (seat is not None and seat not in free):
             return None
-        seat = free.pop(0)
+        seat = seat if seat is not None else free[0]
+        free.remove(seat)
         self.garoa_sold[(flight, seat)] = pax
         return seat
 
