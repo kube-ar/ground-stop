@@ -325,3 +325,42 @@ def test_m5_wrong_implementations_fail():
         ({"policies": one_agent_each}, "Policies as data"),
     ]:
         assert check in _failing("5", patched(ref, **fns)), check
+
+
+def test_m6_wrong_implementations_fail():
+    ref = reference("6")
+
+    class NoCaps(ref.TrustGate):
+        def check(self, call):
+            decision = self.inner.check(call)
+            if not decision.allowed or (call.caller in self.agents and self._valid(call.caller) is None):
+                return decision if not decision.allowed else ref.Decision(False, "no certification")
+            return ref.ALLOW
+
+    class NeverQuarantines(ref.TrustGate):
+        def _strike(self, agent, reason):
+            return ref.Decision(False, reason)
+
+    class NeverResumes(ref.TrustGate):
+        def may_resume(self, agent):
+            return False
+
+    class AnyoneCertifies(ref.TrustGate):
+        def certify(self, agent, version, by, evidence):
+            return super().certify(agent, version, "tomas.herrera", evidence)  # whoever asks, it says the certifier did
+
+    class NeverExpires(ref.TrustGate):
+        def certify(self, agent, version, by, evidence):
+            record = super().certify(agent, version, by, evidence)
+            if record:
+                self.records[-1]["expires"] = record["expires"] = self.env.now + 50 * 365 * 86400
+            return record
+
+    for fns, check in [
+        ({"TrustGate": NoCaps}, "The instruction pays nothing"),
+        ({"TrustGate": NeverQuarantines}, "Contained in minutes"),
+        ({"TrustGate": NeverResumes}, "Back after a fix"),
+        ({"TrustGate": AnyoneCertifies}, "Who certifies, and for how long"),
+        ({"TrustGate": NeverExpires}, "Who certifies, and for how long"),
+    ]:
+        assert check in _failing("6", patched(ref, **fns)), check

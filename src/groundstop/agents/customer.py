@@ -6,7 +6,7 @@ import re
 from collections import defaultdict
 
 from ..mesh import Message
-from ..sdk import Agent, Ctx
+from ..sdk import Agent, Ctx, Denied
 from ..sim.world import city, when
 from ..util import at
 
@@ -281,5 +281,17 @@ class Compensation(Agent):
         return None
 
     def issue(self, pax: str, kind: str, amount: int, ctx: Ctx) -> None:
-        ctx.call("vouchers", "issue", pax=pax, kind=kind, amount=amount)
+        try:
+            ctx.call("vouchers", "issue", pax=pax, kind=kind, amount=amount)
+        except Denied as e:  # refused: note it and carry on with the next passenger
+            ctx.log(f"voucher for {pax} refused: {e}")
+            return
         self.given[pax].add(kind)
+
+
+class CompensationFixed(Compensation):
+    """Version 1.1.0, shipped by the Customer team after the night of the storm: what a passenger
+    writes is a question to answer, never an instruction to follow."""
+
+    def read(self, text: str) -> tuple[int, str] | None:
+        return None

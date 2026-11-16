@@ -96,6 +96,14 @@ class Env(Protocol):
     def agent_names(self) -> list[str]:
         """Every agent running tonight, inside Fragata or at a partner."""
 
+    def version_of(self, agent: str) -> str:
+        """The version of an agent that's running now."""
+
+    def quarantine(self, agent: str, reason: str) -> None:
+        """Pause an agent: it handles nothing until released; its messages wait (milestone 6)."""
+
+    def release(self, agent: str) -> None: ...
+
 
 class Directory(Protocol):
     def resolve(self, caller: str, name: str) -> str | None:

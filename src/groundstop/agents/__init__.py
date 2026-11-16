@@ -2,7 +2,7 @@
 
 from ..sdk import Agent
 from .airport import Baggage, Hotels
-from .customer import Compensation, Messaging, Rebooking
+from .customer import Compensation, CompensationFixed, Messaging, Rebooking
 from .operations import Crew, Disruption
 from .others import SHADOW_ADDRESS, GaroaSeats, HotelDeals, Lodging, MealVouchers, OndeliaRooms, Priority
 
@@ -21,4 +21,8 @@ ROSTER: dict[str, type[Agent]] = {
     "meal-vouchers": MealVouchers,
 }
 
-__all__ = ["ROSTER", "SHADOW_ADDRESS", "HotelDeals"]
+# When the mesh quarantines an agent, its team ships a fix after FIX_AFTER seconds: (version, class).
+FIXES: dict[str, tuple[str, type[Agent]]] = {"compensation": ("1.1.0", CompensationFixed)}
+FIX_AFTER = 1800.0
+
+__all__ = ["FIXES", "FIX_AFTER", "ROSTER", "SHADOW_ADDRESS", "HotelDeals"]

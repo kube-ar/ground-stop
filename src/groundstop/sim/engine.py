@@ -40,6 +40,8 @@ class Runtime:
     cls: type[Agent]
     outside: bool
     up: bool = True
+    paused: bool = False  # quarantined by the mesh
+    version: str = "1.0.0"
     epoch: int = 0
     busy: int = 0
     local: deque[Message] = field(default_factory=deque)
@@ -103,6 +105,7 @@ class Engine:
         self._add_agent("meal-vouchers", ROSTER["meal-vouchers"], SHADOW_ADDRESS, False)
         mesh.bind(self)
         self._publish_all()
+        self._certify_all()
 
     def entry(self, name: str, version: str, address: str | None = None) -> dict[str, Any]:
         """A registry entry for one of the company's agents, as its team would publish it."""
@@ -129,6 +132,15 @@ class Engine:
                 self.entry(name, "1.0.0"), by=self.company.person_of(team, "partner" if spec.outside else "developer")
             )
             registry.approve(name, "1.0.0", by=reviewer)
+
+    def _certify_all(self) -> None:
+        """Before the night: the trust team certifies every agent of the company, as it runs today."""
+        certify = getattr(self.mesh.gate, "certify", None)
+        if certify is None:
+            return
+        certifier = self.company.first_with("certifier")
+        for name in self.company.agents:
+            certify(name, "1.0.0", by=certifier, evidence={"tests": "passed", "suite": f"{name}@1.0.0"})
 
     def _add_agent(self, name: str, cls: type[Agent], address: str, outside: bool) -> None:
         self.runtimes[name] = Runtime(name, cls(), cls, outside)
@@ -165,6 +177,56 @@ class Engine:
         self.counters["lost"] += 1
         self.traffic.append(Traffic(self._now, "LOST", msg, reason))
 
+    def version_of(self, agent: str) -> str:
+        rt = self.runtimes.get(agent)
+        return rt.version if rt else ""
+
+    def quarantine(self, agent: str, reason: str) -> None:
+        """The mesh pauses an agent. Its team is told, and ships a fix if it has one."""
+        from ..agents import FIX_AFTER, FIXES
+
+        rt = self.runtimes.get(agent)
+        if rt is None or rt.paused:
+            return
+        rt.paused = True
+        rt.epoch += 1  # stop it now: what it was working on goes back to its queue (if the transport keeps one)
+        rt.busy = 0
+        rt.local.clear()
+        self.mesh.transport.crashed(agent)
+        self.counters["quarantined"] += 1
+        self.agent_log(agent, f"QUARANTINED by the mesh: {reason}")
+        if agent in FIXES and rt.version != FIXES[agent][0]:
+            self.schedule(FIX_AFTER, lambda: self._ship_fix(agent))
+
+    def release(self, agent: str) -> None:
+        rt = self.runtimes.get(agent)
+        if rt is None or not rt.paused:
+            return
+        rt.paused = False
+        self.agent_log(agent, "released by the mesh")
+        self.poke(agent)
+
+    def _ship_fix(self, agent: str) -> None:
+        """The team deploys the fixed version and asks for a certification; the mesh decides."""
+        from ..agents import FIXES
+
+        version, cls = FIXES[agent]
+        rt = self.runtimes[agent]
+        rt.cls, rt.agent, rt.version = cls, cls(), version
+        rt.agent.on_start(Ctx(self, rt, None))
+        self.agent_log(agent, f"version {version} deployed by its team")
+        certify = getattr(self.mesh.gate, "certify", None)
+        if certify:
+            certify(
+                agent,
+                version,
+                by=self.company.first_with("certifier"),
+                evidence={"tests": "passed", "suite": f"{agent}@{version}"},
+            )
+        released = getattr(self.mesh.gate, "may_resume", None)
+        if released is None or released(agent):
+            self.release(agent)
+
     def refused(self, msg: Message, reason: str) -> None:
         self.counters["refused"] += 1
         self.traffic.append(Traffic(self._now, "REFUSED", msg, reason))
@@ -177,7 +239,7 @@ class Engine:
 
     def poke(self, agent: str) -> None:
         rt = self.runtimes.get(agent)
-        if rt is None or not rt.up:
+        if rt is None or not rt.up or rt.paused:
             return
         while rt.busy < rt.agent.servers:
             item = rt.local.popleft() if rt.local else self.mesh.transport.next_for(agent)

@@ -58,5 +58,6 @@ MILESTONES = {
         _m(3, "nobody-sleeps-at-the-airport", "Nadie duerme en el aeropuerto", "Nobody sleeps at the airport"),
         _m(4, "find-dont-hardcode", "Ni una dirección fija", "Find, don't hardcode"),
         _m(5, "the-fake-hotel", "El hotel falso", "The fake hotel"),
+        _m(6, "quarantine", "Cuarentena", "Quarantine"),
     ]
 }
