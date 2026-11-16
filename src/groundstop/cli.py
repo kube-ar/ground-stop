@@ -5,6 +5,7 @@ ground-stop show p1                    what happens on a night (the practice nig
 ground-stop replay                     replay p1 with the naive mesh; logs go to runs/p1/
 ground-stop replay s2 --mesh mine      ...another night, with your mesh (src/groundstop/mine/mesh.py)
 ground-stop replay --rebooking mine    ...with your rebooking agent from milestone 2
+ground-stop replay f1 --mesh mine --rebooking mine --entry-rules mine   your whole platform, on a final night
 ground-stop --lang en replay           in English (or set GROUND_STOP_LANG=en)
 ground-stop trace PX-48187 --mesh mine one passenger's trace, through your mesh's tracer (milestone 4)
 ground-stop check 1                    run milestone 1's checks on your code (--reference: on the reference)
@@ -87,8 +88,14 @@ def cmd_replay(args) -> None:
 
         name = "groundstop.mine.m2_a_contract_for_rebooking" if args.rebooking == "mine" else args.rebooking
         agents["rebooking"] = planned_rebooking(importlib.import_module(name))
+    new_agents = []
+    if args.entry_rules:
+        import importlib
+
+        name = "groundstop.mine.m7_the_next_storm" if args.entry_rules == "mine" else args.entry_rules
+        new_agents.append(importlib.import_module(name).entry_rules())
     print(t("cli.replaying", night=n.id, mesh=mesh_name(mesh.name)))
-    engine = Engine(n, mesh, agents=agents).run()
+    engine = Engine(n, mesh, agents=agents, new_agents=new_agents).run()
     board = score(engine)
     out = Path(args.out) if args.out else RUNS / n.id
     engine.write_logs(out)
@@ -204,6 +211,7 @@ def main(argv: list[str] | None = None) -> None:
     p.add_argument("night", nargs="?", default="p1")
     p.add_argument("--mesh", default="naive", help=t("cli.help.mesh"))
     p.add_argument("--rebooking", help=t("cli.help.rebooking"))
+    p.add_argument("--entry-rules", dest="entry_rules", help=t("cli.help.entry_rules"))
     p.add_argument("--out", help=t("cli.help.out"))
     p.set_defaults(fn=cmd_replay)
 

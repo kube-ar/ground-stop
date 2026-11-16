@@ -98,6 +98,10 @@ TEXT: dict[str, dict[str, str]] = {
         "es": "naive (la de Fragata hoy), mine (src/groundstop/mine/mesh.py) o un módulo cuyo build() devuelve una malla",
         "en": "naive (Fragata's today), mine (src/groundstop/mine/mesh.py) or a module whose build() returns a mesh",
     },
+    "cli.help.entry_rules": {
+        "es": "mine (tu agente de reglas de entrada del hito 7) o un módulo con entry_rules()",
+        "en": "mine (your entry-rules agent from milestone 7) or a module with entry_rules()",
+    },
     "cli.help.out": {
         "es": "carpeta para los logs (por defecto runs/<noche>/)",
         "en": "folder for the logs (default runs/<night>/)",

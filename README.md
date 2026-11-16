@@ -53,11 +53,13 @@ Cada hito cambia una pieza de la malla, y el mismo marcador muestra qué arregla
 
 | Comando | Qué hace |
 |---|---|
-| `ground-stop nights` | las noches del repositorio: 3 de práctica y 6 estándar |
+| `ground-stop nights` | las noches del repositorio: 3 de práctica, 6 estándar y 3 finales |
 | `ground-stop show p1` | qué pasa en una noche (las de práctica lo avisan) |
 | `ground-stop replay s2` | reproduce otra noche |
-| `ground-stop replay p1 --mesh mi_malla` | con tu malla: un módulo cuyo `build()` la devuelve |
+| `ground-stop replay p1 --mesh mine` | con tu malla (`src/groundstop/mine/mesh.py`) |
 | `ground-stop --lang en replay` | en inglés (o `GROUND_STOP_LANG=en`) |
+| `ground-stop trace PX-48187 --mesh mine` | la traza de un pasajero, con tu tracer (hito 4) |
+| `ground-stop replay f1 --mesh mine --rebooking mine --entry-rules mine` | tu plataforma entera, en una noche final (hito 7) |
 
 Con Docker: `docker compose run --rm ground-stop show p1`.
 
@@ -90,10 +92,10 @@ Tu código va en `src/groundstop/mine/`, un archivo por hito. `uv run ground-sto
 | 1 | [Contar los agentes](https://kube.ar/es/agentic-mesh/project/ground-stop/count-the-agents): las configs contra el tráfico | Por qué un ecosistema | listo |
 | 2 | [Un contrato para reprogramar](https://kube.ar/es/agentic-mesh/project/ground-stop/a-contract-for-rebooking): un plan, su log y un contrato | Un agente en el que otros confían | listo |
 | 3 | [Nadie duerme en el aeropuerto](https://kube.ar/es/agentic-mesh/project/ground-stop/nobody-sleeps-at-the-airport): un espacio de trabajo compartido | Agentes que trabajan juntos | listo |
-| 4 | Ni una dirección fija | Servicios compartidos | planeado |
-| 5 | El hotel falso | Seguridad y confianza | planeado |
-| 6 | Cuarentena | Seguridad y confianza | planeado |
-| 7 | La próxima tormenta | Agentes a escala de empresa | planeado |
+| 4 | [Ni una dirección fija](https://kube.ar/es/agentic-mesh/project/ground-stop/find-dont-hardcode): registro, descubrimiento y trazas | Servicios compartidos | listo |
+| 5 | [El hotel falso](https://kube.ar/es/agentic-mesh/project/ground-stop/the-fake-hotel): identidad, delegación y un punto de decisión | Seguridad y confianza | listo |
+| 6 | [Cuarentena](https://kube.ar/es/agentic-mesh/project/ground-stop/quarantine): certificación, topes y cuarentena | Seguridad y confianza | listo |
+| 7 | [La próxima tormenta](https://kube.ar/es/agentic-mesh/project/ground-stop/the-next-storm): fábrica, pipeline, retiro y el paquete final | Agentes a escala de empresa | listo |
 
 Camino rápido: Python y SQLite, unas 3 a 4 horas por hito (unas 20 en total). Camino a fondo: las
 mismas comprobaciones sobre la infraestructura que usaría una empresa (NATS, OPA, step-ca,
@@ -135,10 +137,12 @@ shows what you fixed.
 
 | Command | Does |
 |---|---|
-| `ground-stop nights` | the nights in the repo: 3 practice, 6 standard |
+| `ground-stop nights` | the nights in the repo: 3 practice, 6 standard, 3 final |
 | `ground-stop show p1` | what happens on a night (practice nights tell you) |
 | `ground-stop replay s2` | replay another night |
-| `ground-stop replay p1 --mesh my_mesh` | with your mesh: a module whose `build()` returns it |
+| `ground-stop replay p1 --mesh mine` | with your mesh (`src/groundstop/mine/mesh.py`) |
+| `ground-stop trace PX-48187 --mesh mine` | one passenger's trace, through your tracer (milestone 4) |
+| `ground-stop replay f1 --mesh mine --rebooking mine --entry-rules mine` | your whole platform, on a final night (milestone 7) |
 
 Every `replay` leaves its logs in `runs/<night>/`: `traffic.log` (every message between agents,
 and the ones that were lost), `systems.log` (every call to Fragata's systems), `agents/*.log`
@@ -169,10 +173,10 @@ puts it back).
 | 1 | [Count the agents](https://kube.ar/agentic-mesh/project/ground-stop/count-the-agents): the configs against the traffic | Why an ecosystem | ready |
 | 2 | [A contract for rebooking](https://kube.ar/agentic-mesh/project/ground-stop/a-contract-for-rebooking): a plan, its log and a contract | One agent others can rely on | ready |
 | 3 | [Nobody sleeps at the airport](https://kube.ar/agentic-mesh/project/ground-stop/nobody-sleeps-at-the-airport): a shared workspace | Agents working together | ready |
-| 4 | Find, don't hardcode | Shared services | planned |
-| 5 | The fake hotel | Security and trust | planned |
-| 6 | Quarantine | Security and trust | planned |
-| 7 | The next storm | Agents at company scale | planned |
+| 4 | [Find, don't hardcode](https://kube.ar/agentic-mesh/project/ground-stop/find-dont-hardcode): registry, discovery and traces | Shared services | ready |
+| 5 | [The fake hotel](https://kube.ar/agentic-mesh/project/ground-stop/the-fake-hotel): identity, delegation and one decision point | Security and trust | ready |
+| 6 | [Quarantine](https://kube.ar/agentic-mesh/project/ground-stop/quarantine): certification, caps and quarantine | Security and trust | ready |
+| 7 | [The next storm](https://kube.ar/agentic-mesh/project/ground-stop/the-next-storm): factory, pipeline, retirement and the final pack | Agents at company scale | ready |
 
 Fast path: Python and SQLite, about 3–4 hours per milestone (about 20 in all). Deep path: the same
 checks on the infrastructure a company would run (NATS, OPA, step-ca, OpenTelemetry).
