@@ -59,5 +59,6 @@ MILESTONES = {
         _m(4, "find-dont-hardcode", "Ni una dirección fija", "Find, don't hardcode"),
         _m(5, "the-fake-hotel", "El hotel falso", "The fake hotel"),
         _m(6, "quarantine", "Cuarentena", "Quarantine"),
+        _m(7, "the-next-storm", "La próxima tormenta", "The next storm"),
     ]
 }

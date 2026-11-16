@@ -72,5 +72,6 @@ def test_places_and_rules():
     internal = [a for a in company.agents.values() if not a.outside]
     partners = [a for a in company.agents.values() if a.outside]
     assert len(internal) + len(partners) == 11 and len(partners) == 2
+    planned = {"entry-rules"}  # the agent milestone 7 builds; its policy is ready before it is
     for target, agents in company.scopes.items():
-        assert all(a in company.agents for a in agents), target
+        assert all(a in company.agents or a in planned for a in agents), target

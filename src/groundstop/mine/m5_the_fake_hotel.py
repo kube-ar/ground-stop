@@ -46,6 +46,10 @@ class Identity:
     def revoke(self, agent: str) -> None:
         raise NotImplementedError
 
+    def enroll(self, agent: str) -> None:
+        """A new agent joins the company (you'll need it in milestone 7): start issuing it credentials."""
+        raise NotImplementedError
+
     def delegate(self, agent: str, pax: str, scope: list[str], ttl: float) -> str:
         """A token that lets `agent` act for passenger `pax`, only for `scope`, for `ttl` seconds."""
         raise NotImplementedError

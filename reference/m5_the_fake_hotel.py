@@ -80,6 +80,10 @@ class Identity:
             return None
         return claims
 
+    def enroll(self, agent: str) -> None:
+        """A new agent joins the company (milestone 7): the mesh starts issuing it credentials."""
+        self.known.add(agent)
+
     def revoke(self, agent: str) -> None:
         self.revoked.add(agent)
         self.issued.pop(agent, None)

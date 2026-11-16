@@ -9,7 +9,7 @@
 "reservations.seat_map" = ["rebooking", "priority"]
 "reservations.assign" = ["rebooking", "priority"]
 "reservations.record_partner" = ["rebooking"]
-"reservations.passenger" = ["rebooking", "priority", "messaging", "compensation", "hotels", "lodging", "baggage"]
+"reservations.passenger" = ["rebooking", "priority", "messaging", "compensation", "hotels", "lodging", "baggage", "entry-rules"]  # entry-rules: the agent Airport asked for (milestone 7)
 "crews.assign" = ["crew"]
 "sms.send" = ["messaging"]
 "vouchers.issue" = ["compensation"]

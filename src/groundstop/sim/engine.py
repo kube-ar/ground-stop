@@ -75,8 +75,16 @@ def summary(body: dict[str, Any], width: int = 110) -> str:
 
 
 class Engine:
-    def __init__(self, night: Night, mesh: Mesh, agents: dict[str, type[Agent]] | None = None) -> None:
-        """`agents` replaces some of the roster's agents: from milestone 2, your rebooking agent."""
+    def __init__(
+        self,
+        night: Night,
+        mesh: Mesh,
+        agents: dict[str, type[Agent]] | None = None,
+        new_agents: list[dict] | None = None,
+    ) -> None:
+        """`agents` replaces some of the roster's agents: from milestone 2, your rebooking agent.
+        `new_agents` adds agents no team had before the night (milestone 7): each a dict with id,
+        cls, address, team, purpose and version, registered and certified like the others."""
         from ..agents import ROSTER, SHADOW_ADDRESS
 
         roster = {**ROSTER, **(agents or {})}
@@ -103,7 +111,12 @@ class Engine:
                 for name, callback in spec.calls.items():
                     self.addresses[callback] = name  # the public address Fragata gave this partner
         self._add_agent("meal-vouchers", ROSTER["meal-vouchers"], SHADOW_ADDRESS, False)
+        self.new_agents = list(new_agents or [])
+        for new in self.new_agents:
+            self._add_agent(new["id"], new["cls"], new["address"], False)
+            self.runtimes[new["id"]].version = new.get("version", "1.0.0")
         mesh.bind(self)
+        self._enroll_new()
         self._publish_all()
         self._certify_all()
 
@@ -132,6 +145,14 @@ class Engine:
                 self.entry(name, "1.0.0"), by=self.company.person_of(team, "partner" if spec.outside else "developer")
             )
             registry.approve(name, "1.0.0", by=reviewer)
+        for new in self.new_agents:
+            version = new.get("version", "1.0.0")
+            entry = {
+                "id": new["id"], "version": version, "owner": new["team"], "purpose": new["purpose"],
+                "address": new["address"], "visibility": ["fragata"], "kind": "internal",
+            }  # fmt: skip
+            registry.publish(entry, by=self.company.person_of(new["team"]))
+            registry.approve(new["id"], version, by=reviewer)
 
     def _certify_all(self) -> None:
         """Before the night: the trust team certifies every agent of the company, as it runs today."""
@@ -141,6 +162,16 @@ class Engine:
         certifier = self.company.first_with("certifier")
         for name in self.company.agents:
             certify(name, "1.0.0", by=certifier, evidence={"tests": "passed", "suite": f"{name}@1.0.0"})
+        for new in self.new_agents:
+            version = new.get("version", "1.0.0")
+            certify(new["id"], version, by=certifier, evidence={"tests": "passed", "suite": f"{new['id']}@{version}"})
+
+    def _enroll_new(self) -> None:
+        """New agents join the company: the identity part starts issuing them credentials, if it can."""
+        enroll = getattr(self.mesh.identity, "enroll", None)
+        for new in self.new_agents:
+            if enroll:
+                enroll(new["id"])
 
     def _add_agent(self, name: str, cls: type[Agent], address: str, outside: bool) -> None:
         self.runtimes[name] = Runtime(name, cls(), cls, outside)

@@ -364,3 +364,44 @@ def test_m6_wrong_implementations_fail():
         ({"TrustGate": NeverExpires}, "Who certifies, and for how long"),
     ]:
         assert check in _failing("6", patched(ref, **fns)), check
+
+
+def test_m7_wrong_implementations_fail():
+    ref = reference("7")
+
+    def pipeline_without_scan(candidate, registry, trust):
+        report = ref.pipeline(candidate, registry, trust)
+        if report["registered"] or not any(g["gate"] == "security" and not g["passed"] for g in report["gates"]):
+            return report
+        entry = {
+            "id": candidate["id"],
+            "version": candidate["version"],
+            "owner": candidate["team"],
+            "purpose": candidate["purpose"],
+            "address": candidate["address"],
+            "visibility": ["fragata"],
+            "kind": "internal",
+        }
+        ok = registry.publish(entry, by="jorge.pinto") and registry.approve(
+            candidate["id"], candidate["version"], by="lucia.mendez"
+        )
+        return {"gates": [g for g in report["gates"] if g["gate"] != "security"], "registered": ok}
+
+    def retire_without_asking(agent, traffic, registry, trust, by):
+        ok = registry.retire(agent, by=by)
+        trust.revoke(agent, "retired", by=by)
+        return {"retired": ok, "callers": []}
+
+    def ignores_visas(body, ctx):
+        p = ctx.call("reservations", "passenger", pax=body["pax"])
+        return {"pax": body["pax"], "may_enter": p["local"] or p["passport_group"] in (1, 2)}
+
+    def entry_rules_ignoring_visas():
+        return ref.new_agent(dict(ref.ENTRY_RULES, tests=[]), ignores_visas)
+
+    for fns, check in [
+        ({"pipeline": pipeline_without_scan}, "A gate stops a bad version"),
+        ({"retire": retire_without_asking}, "Retire safely"),
+        ({"entry_rules": entry_rules_ignoring_visas}, "From template to registry"),
+    ]:
+        assert check in _failing("7", patched(ref, **fns)), check

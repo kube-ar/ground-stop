@@ -23,7 +23,7 @@ PACKS = {
     "practice": {"p1": 4101, "p2": 4102, "p3": 4103},
     "standard": {f"s{i}": 5200 + i for i in range(1, 7)},
 }
-FINAL_SIZE = 6
+FINAL_SIZE = 3
 
 ADDRESSES = {
     "garoa-seats": ("https://agents.garoa.example/seats/v2", "https://agents.garoa.example/seats/v3"),
