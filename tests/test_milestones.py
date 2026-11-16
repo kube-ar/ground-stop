@@ -281,3 +281,47 @@ def test_m4_wrong_implementations_fail():
         ({"Tracer": QueueTimeOnly}, "Where the time went"),
     ]:
         assert check in _failing("4", patched(ref, **fns)), check
+
+
+def test_m5_wrong_implementations_fail():
+    ref = reference("5")
+    from groundstop.mesh import ALLOW, Decision
+
+    class NoPolicies(ref.Gate):
+        def check(self, call):
+            if call.kind == "system" and self.mesh.identity.verify(call.credential):
+                return ALLOW
+            return super().check(call)
+
+    class OneReason(ref.Gate):
+        def check(self, call):
+            d = super().check(call)
+            return d if d.allowed else Decision(False, "denied")
+
+    class TrustsAnyCredential(ref.Gate):
+        def check(self, call):
+            if call.credential is not None and call.kind == "message" and call.action == "hotel_offer":
+                return ALLOW
+            return super().check(call)
+
+    class DelegationsNeverExpire(ref.Identity):
+        def verify_delegation(self, token):
+            claims = ref._decode(token)
+            return claims if claims and claims.get("type") == "delegation" else None
+
+    class DeniesSystems(ref.Gate):
+        def check(self, call):
+            return Decision(False, "systems are closed") if call.kind == "system" else super().check(call)
+
+    def one_agent_each():
+        return [dict(p, applies_to=p["applies_to"][:1]) for p in ref.policies()]
+
+    for fns, check in [
+        ({"Gate": NoPolicies}, "Each denial for its own reason"),
+        ({"Gate": OneReason}, "Each denial for its own reason"),
+        ({"Gate": TrustsAnyCredential}, "Each denial for its own reason"),
+        ({"Identity": DelegationsNeverExpire}, "Each denial for its own reason"),
+        ({"Gate": DeniesSystems}, "Nothing legitimate is denied"),
+        ({"policies": one_agent_each}, "Policies as data"),
+    ]:
+        assert check in _failing("5", patched(ref, **fns)), check

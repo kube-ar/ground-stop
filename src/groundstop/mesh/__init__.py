@@ -32,8 +32,9 @@ class Message:
     sent_at: float
     credential: str | None = None  # set by the identity part, if any
     trace: str | None = None  # set by the tracer, if any
-    parent: int | None = None  # the message being handled when this one was sent
+    parent: int | None = None  # the message that caused this one
     local: bool = False  # work an agent queued for itself; never leaves the agent
+    delegation: str | None = None  # a token that lets the sender act for one passenger (milestone 5)
 
 
 @dataclass(frozen=True)
@@ -47,6 +48,7 @@ class Call:
     action: str  # message kind, or the system operation
     body: dict[str, Any]
     at: float
+    delegation: str | None = None  # the delegated token the message carried, if any
 
 
 @dataclass(frozen=True)

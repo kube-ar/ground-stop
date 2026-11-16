@@ -201,8 +201,17 @@ class Engine:
             return None
         return parent.parent if parent.local else parent.id
 
-    def send(self, sender: str, to: str, kind: str, body: dict[str, Any], parent: Message | None) -> None:
+    def send(
+        self,
+        sender: str,
+        to: str,
+        kind: str,
+        body: dict[str, Any],
+        parent: Message | None,
+        delegation: str | None = None,
+    ) -> None:
         msg = Message(next(self._ids), sender, to, kind, dict(body), self._now, parent=self.cause(parent))
+        msg.delegation = delegation
         msg.credential = self.mesh.identity.credential(sender)
         self.mesh.tracer.stamp(msg, parent)
         self.counters["sent"] += 1
@@ -251,7 +260,9 @@ class Engine:
             return  # the agent crashed while working on it: the work went with it
         rt.busy -= 1
         if not item.local:
-            call = Call("message", item.sender, item.credential, rt.name, item.kind, item.body, self._now)
+            call = Call(
+                "message", item.sender, item.credential, rt.name, item.kind, item.body, self._now, item.delegation
+            )
             decision = self.mesh.gate.check(call)
             if not decision.allowed:
                 self.counters["denied"] += 1
@@ -300,7 +311,13 @@ class Engine:
         """After their first text from Fragata, some passengers open the app or write back."""
         if p.app and not p.local:
             delay = reaction_delay(self.night.seed, p.id, "app", 5, 40)
-            self.schedule(delay, lambda: self.send("app", "lodging", "app_hotel", {"pax": p.id}, None))
+
+            def tap() -> None:  # the passenger taps "book me a hotel": the app acts for them, for this only
+                delegate = getattr(self.mesh.identity, "delegate", None)
+                token = delegate("app", p.id, ["book_hotel"], 1800) if delegate else None
+                self.send("app", "lodging", "app_hotel", {"pax": p.id}, None, delegation=token)
+
+            self.schedule(delay, tap)
         if p.writes:
             delay = reaction_delay(self.night.seed, p.id, "writes", 10, 60)
             text = QUESTION[p.lang]
