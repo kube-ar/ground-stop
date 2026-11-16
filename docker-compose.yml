@@ -1,5 +1,6 @@
 # `docker compose up` replays night p1 with the naive mesh and prints the scoreboard.
-# Other commands: `docker compose run --rm ground-stop show p1`, `... replay s2 --mesh my_mesh`.
+# Other commands: `docker compose run --rm ground-stop show p1`, `... replay s2 --mesh mine`.
+# After adding a dependency (uv add …), rebuild the image: `docker compose build`.
 # The repo is mounted, so your code and the logs in runs/ live on your machine.
 services:
   ground-stop:

@@ -161,6 +161,8 @@ def run(module: ModuleType) -> list[Result]:
         )
     except NotImplementedError:
         listed.started = listed.passed = False
+    except Exception as e:  # your code raised: report it, don't crash
+        listed.fail(f"{type(e).__name__}: {e}")
 
     # 2. partners found after they move, and the shadow agent never reached
     ok = 0
@@ -198,6 +200,8 @@ def run(module: ModuleType) -> list[Result]:
         tally(found, right, len(QUERIES), {"es": "búsquedas", "en": "searches"})
     except NotImplementedError:
         found.started = found.passed = False
+    except Exception as e:  # your code raised: report it, don't crash
+        found.fail(f"{type(e).__name__}: {e}")
 
     # 4. a scene: publish, approve, retire, each by someone
     try:
@@ -205,6 +209,8 @@ def run(module: ModuleType) -> list[Result]:
         tally(review, right, steps, {"es": "pasos", "en": "steps"})
     except NotImplementedError:
         review.started = review.passed = False
+    except Exception as e:  # your code raised: report it, don't crash
+        review.fail(f"{type(e).__name__}: {e}")
 
     # 5 and 6. traces
     try:
@@ -246,6 +252,9 @@ def run(module: ModuleType) -> list[Result]:
         tally(slow, right, total, {"es": "pasajeros", "en": "passengers"})
     except NotImplementedError:
         traced.started = traced.passed = slow.started = slow.passed = False
+    except Exception as e:  # your code raised: report it, don't crash
+        traced.fail(f"{type(e).__name__}: {e}")
+        slow.fail(f"{type(e).__name__}: {e}")
     return results
 
 

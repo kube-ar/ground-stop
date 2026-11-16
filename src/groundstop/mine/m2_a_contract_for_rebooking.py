@@ -10,7 +10,7 @@ call it by.
 - The plan format, the parameter sources and `only_if`: the docstring of `groundstop.plans`.
 - Check: `uv run ground-stop check 2`. Try it in a night: `uv run ground-stop replay --rebooking mine`.
 
-Instructions: https://kube.ar/es/agentic-mesh/project/ground-stop/a-contract-for-rebooking
+Instructions: https://kube.ar/agentic-mesh/project/ground-stop/a-contract-for-rebooking (en español: https://kube.ar/es/agentic-mesh/project/ground-stop/a-contract-for-rebooking)
 """
 
 from __future__ import annotations

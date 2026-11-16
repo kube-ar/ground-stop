@@ -196,3 +196,21 @@ def retire(agent: str, traffic_log: Any, registry: Any, trust: Any, by: str) -> 
     if retired:
         trust.revoke(agent, "retired", by=by)
     return {"retired": retired, "callers": []}
+
+
+# ---- who decides what ----------------------------------------------------------------------------
+
+DECISIONS = ("asks", "builds", "approves", "certifies", "on_call", "retires")
+
+
+def operating_model() -> dict[str, str]:
+    """Airport asks for it and builds it; the platform reviewer approves; the trust team certifies;
+    the duty manager is woken up; Airport decides when it goes."""
+    return {
+        "asks": "jorge.pinto",
+        "builds": "jorge.pinto",
+        "approves": "lucia.mendez",
+        "certifies": "tomas.herrera",
+        "on_call": "carla.duarte",
+        "retires": "jorge.pinto",
+    }

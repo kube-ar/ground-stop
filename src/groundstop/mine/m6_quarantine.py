@@ -6,15 +6,20 @@ Your TrustGate sits in front of another gate (milestone 5's) and adds what ident
   with an expiry and a status (active, suspended, revoked, superseded). An agent without a valid
   certification for the version it's running may do nothing.
 - Caps from the compensation policy: what a voucher may be, and how many each passenger gets.
-- Quarantine: an agent whose calls keep breaking the policy within minutes is suspended, paused
-  with env.quarantine(), and a person is told. Its team ships a fix; you decide when it may resume.
+- Quarantine: an agent whose calls keep breaking the compensation policy within minutes is
+  suspended, paused with env.quarantine(), and a person is told. Only refusals by your caps count
+  (a denial from milestone 5's gate, like priority's goodwill vouchers, is not a strike). Its team
+  ships a fix; you decide when it may resume.
+
+`certify` gets evidence like {"tests": "passed", "suite": ...}: certify only when tests == "passed".
+The inner gate may have no `bind` method: call it only if it exists.
 
 Before the night the trust team certifies every agent (the engine calls certify for them). When
 a quarantined agent's team deploys a fix, the engine calls certify for the new version and then
 asks may_resume(agent).
 
 Check: `uv run ground-stop check 6`.
-Instructions: https://kube.ar/es/agentic-mesh/project/ground-stop/quarantine
+Instructions: https://kube.ar/agentic-mesh/project/ground-stop/quarantine (en español: https://kube.ar/es/agentic-mesh/project/ground-stop/quarantine)
 """
 
 from __future__ import annotations

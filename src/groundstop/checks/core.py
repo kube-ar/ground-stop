@@ -52,6 +52,21 @@ def attempt(result: Result, fn: Callable, *args, none_ok: bool = False, **kwargs
     return value
 
 
+def guard(result: Result, fn: Callable, *args, **kwargs):
+    """Run a part of a check; an exception in your code becomes a line in the report, not a traceback.
+    Returns (ok, value). NotImplementedError marks the check as not started."""
+    try:
+        return True, fn(*args, **kwargs)
+    except NotImplementedError:
+        result.started = result.passed = False
+        return False, None
+    except Exception:
+        tb = traceback.format_exc().strip().splitlines()
+        result.fail(t("check.raised", fn=getattr(fn, "__name__", "?"), error=tb[-1]))
+        result.details.extend("    " + line for line in tb[-5:-1])
+        return False, None
+
+
 def reference(milestone_id: str):
     """A milestone's reference solution, to stand in for the parts other milestones build."""
     import importlib.util

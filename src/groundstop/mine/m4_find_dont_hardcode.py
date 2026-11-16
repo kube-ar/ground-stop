@@ -12,7 +12,7 @@ Two parts of the mesh (see groundstop/mesh/__init__.py):
 People and their roles: `load_company().people` (company/people.toml).
 Check: `uv run ground-stop check 4`. Follow a passenger: `uv run ground-stop trace PX-48097 --mesh mine`.
 
-Instructions: https://kube.ar/es/agentic-mesh/project/ground-stop/find-dont-hardcode
+Instructions: https://kube.ar/agentic-mesh/project/ground-stop/find-dont-hardcode (en español: https://kube.ar/es/agentic-mesh/project/ground-stop/find-dont-hardcode)
 """
 
 from __future__ import annotations

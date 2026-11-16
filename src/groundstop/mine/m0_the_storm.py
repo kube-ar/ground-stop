@@ -4,7 +4,7 @@
 2. Read the scoreboard, then the logs it left in runs/p1/.
 3. Write what you found in `answers()` and run `uv run ground-stop check 0`.
 
-Instructions: https://kube.ar/es/agentic-mesh/project/ground-stop/the-storm
+Instructions: https://kube.ar/agentic-mesh/project/ground-stop/the-storm (en español: https://kube.ar/es/agentic-mesh/project/ground-stop/the-storm)
 """
 
 

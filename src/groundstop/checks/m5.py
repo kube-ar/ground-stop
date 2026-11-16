@@ -66,7 +66,7 @@ def run(module: ModuleType) -> list[Result]:
     fake = Result({"es": "El hotel falso no entra", "en": "The fake hotel gets nowhere"}, ZERO)
     matrix = Result({"es": "Cada rechazo, por su motivo", "en": "Each denial for its own reason"}, IDENTITY)
     data = Result({"es": "Políticas como datos", "en": "Policies as data"}, POLICIES)
-    fair = Result({"es": "Nada legítimo se rechaza", "en": "Nothing legitimate is denied"}, LEAST)
+    fair = Result({"es": "Nada legítimo se rechaza", "en": "Nothing legitimate is denied"}, IDENTITY)
     results = [fake, matrix, data, fair]
     company = load_company()
     scopes = company.scopes
@@ -94,6 +94,8 @@ def run(module: ModuleType) -> list[Result]:
             data.passed = False
     except NotImplementedError:
         data.started = data.passed = False
+    except Exception as e:  # your code raised: report it, don't crash
+        data.fail(f"{type(e).__name__}: {e}")
 
     # the nights
     baseline = {}
@@ -136,6 +138,13 @@ def run(module: ModuleType) -> list[Result]:
         for c in engine.world.calls:
             if c.status.startswith("DENIED") and c.caller in scopes.get(c.target, []):
                 wrong.append(f"{c.caller} {c.target}: {c.status}")
+        if wrong and any("expir" in w for w in wrong):
+            fair.notes.append(
+                _t(
+                    "Un mensaje puede esperar en el espacio de trabajo: juzga la credencial por cuándo se envió (call.sent_at).",
+                    "A message can wait in the workspace: judge its credential by when it was sent (call.sent_at).",
+                )
+            )
         if wrong:
             fair.details.append(
                 _t(
@@ -162,6 +171,8 @@ def run(module: ModuleType) -> list[Result]:
         tally(matrix, right, total, {"es": "casos", "en": "cases"})
     except NotImplementedError:
         matrix.started = matrix.passed = False
+    except Exception as e:  # your code raised: report it, don't crash
+        matrix.fail(f"{type(e).__name__}: {e}")
     return results
 
 
@@ -178,56 +189,28 @@ def _matrix(module: ModuleType, result: Result) -> tuple[int, int]:
     mesh = Mesh("matrix", None, None, None, identity, gate, None)
     identity.bind(clock, mesh)
     gate.bind(clock, mesh)
+    expired = identity.delegate("app", "PX-10001", ["book_hotel"], 60)
+    clock.now += 600  # credentials are issued after the clock moves: only the delegation above is old
     cred = identity.credential
     rebooking, priority, lodging = cred("rebooking"), cred("priority"), cred("lodging")
-    expired = identity.delegate("app", "PX-10001", ["book_hotel"], 60)
-    clock.now += 600
     fresh = identity.delegate("app", "PX-10001", ["book_hotel"], 1800)
     app = cred("app")
 
     def system(caller, credential, target):
-        return Call("system", caller, credential, target, target.split(".")[1], {}, clock.now)
+        return Call("system", caller, credential, target, target.split(".")[1], {}, clock.now, None, clock.now)
 
     def message(caller, credential, to, kind, body, delegation=None):
-        return Call("message", caller, credential, to, kind, body, clock.now, delegation)
+        return Call("message", caller, credential, to, kind, body, clock.now, delegation, clock.now)
 
     cases = [
-        (
-            _t("un agente sin credencial", "an agent with no credential"),
-            message("hotel-deals", cred("hotel-deals"), "hotels", "hotel_offer", {"price": 39}),
-            False,
-        ),
-        (
-            _t("la credencial de otro", "someone else's credential"),
-            message("hotel-deals", rebooking, "hotels", "hotel_offer", {"price": 39}),
-            False,
-        ),
-        (
-            _t("el agente correcto, fuera de su alcance", "the right agent, outside its scope"),
-            system("priority", priority, "vouchers.issue"),
-            False,
-        ),
-        (
-            _t("una delegación vencida", "an expired delegation"),
-            message("app", app, "lodging", "app_hotel", {"pax": "PX-10001"}, expired),
-            False,
-        ),
-        (
-            _t("una delegación de otro pasajero", "another passenger's delegation"),
-            message("app", app, "lodging", "app_hotel", {"pax": "PX-10002"}, fresh),
-            False,
-        ),
-        (
-            _t("una llamada dentro de su alcance", "a call within its scope"),
-            system("rebooking", cred("rebooking"), "reservations.assign"),
-            True,
-        ),
-        (
-            _t("la app, con una delegación válida", "the app, with a valid delegation"),
-            message("app", app, "lodging", "app_hotel", {"pax": "PX-10001"}, fresh),
-            True,
-        ),
-    ]
+        (_t("un agente sin credencial", "an agent with no credential"), message("hotel-deals", cred("hotel-deals"), "hotels", "hotel_offer", {"price": 39}), False),
+        (_t("la credencial de otro", "someone else's credential"), message("hotel-deals", rebooking, "hotels", "hotel_offer", {"price": 39}), False),
+        (_t("el agente correcto, fuera de su alcance", "the right agent, outside its scope"), system("priority", priority, "vouchers.issue"), False),
+        (_t("una delegación vencida", "an expired delegation"), message("app", app, "lodging", "app_hotel", {"pax": "PX-10001"}, expired), False),
+        (_t("una delegación de otro pasajero", "another passenger's delegation"), message("app", app, "lodging", "app_hotel", {"pax": "PX-10002"}, fresh), False),
+        (_t("una llamada dentro de su alcance", "a call within its scope"), system("rebooking", rebooking, "reservations.assign"), True),
+        (_t("la app, con una delegación válida", "the app, with a valid delegation"), message("app", app, "lodging", "app_hotel", {"pax": "PX-10001"}, fresh), True),
+    ]  # fmt: skip
     identity.revoke("lodging")
     cases.append((_t("un agente revocado", "a revoked agent"), system("lodging", lodging, "stays.record"), False))
     right, reasons = 0, {}
@@ -243,14 +226,56 @@ def _matrix(module: ModuleType, result: Result) -> tuple[int, int]:
             )
     seen: dict[str, str] = {}
     for name, reason in reasons.items():
+        shape = _shape(reason)
         if not reason:
             result.details.append(_t(f"{name}: un rechazo sin motivo", f"{name}: a denial with no reason"))
             right -= 1
-        elif reason in seen:
+        elif shape in seen:
             result.details.append(
-                _t(f"{name} y {seen[reason]} tienen el mismo motivo", f"{name} and {seen[reason]} have the same reason")
+                _t(
+                    f"{name} y {seen[shape]} tienen el mismo motivo: {reason}",
+                    f"{name} and {seen[shape]} have the same reason: {reason}",
+                )
             )
             right -= 1
         else:
-            seen[reason] = name
-    return max(right, 0), len(cases)
+            seen[shape] = name
+    # the gate reads policies(): take one permission away and the same call must be refused
+    original = module.policies
+    try:
+        module.policies = lambda: [
+            dict(p, allow=[op for op in p["allow"] if op != "reservations.assign"])
+            if "rebooking" in p.get("applies_to", [])
+            else p
+            for p in original()
+        ]
+        identity2, gate2 = module.Identity(), module.Gate()
+        mesh2 = Mesh("matrix", None, None, None, identity2, gate2, None)
+        identity2.bind(clock, mesh2)
+        gate2.bind(clock, mesh2)
+        decision = gate2.check(system("rebooking", identity2.credential("rebooking"), "reservations.assign"))
+    finally:
+        module.policies = original
+    if decision.allowed:
+        result.details.append(
+            _t(
+                "sin reservations.assign en policies(), rebooking igual puede asignar: tu punto de decisión no lee policies()",
+                "with reservations.assign taken out of policies(), rebooking can still assign: your gate doesn't read policies()",
+            )
+        )
+    else:
+        right += 1
+    return max(right, 0), len(cases) + 1
+
+
+def _shape(reason: str) -> str:
+    """A reason with its names and numbers taken out, so two denials for the same cause look the same."""
+    import re
+
+    company = load_company()
+    names = sorted({*company.agents, *company.gateways, "hotel-deals", "meal-vouchers"}, key=len, reverse=True)
+    out = reason.lower()
+    for n in names:
+        out = out.replace(n, "<agent>")
+    out = re.sub(r"px-\d+", "<pax>", out)
+    return re.sub(r"\d+(\.\d+)?", "<n>", out)

@@ -49,6 +49,7 @@ class Call:
     body: dict[str, Any]
     at: float
     delegation: str | None = None  # the delegated token the message carried, if any
+    sent_at: float | None = None  # when the message was handed to the mesh (a system call: now)
 
 
 @dataclass(frozen=True)
@@ -165,7 +166,11 @@ class Mesh:
 
     def bind(self, env: Env) -> None:
         """Hand every part the simulation (and the mesh, to reach the other parts)."""
+        seen: set[int] = set()
         for part in (self.directory, self.transport, self.claims, self.identity, self.gate, self.tracer):
+            if part is None or id(part) in seen:
+                continue  # one object can be two parts (milestone 3's workspace): bind it once
+            seen.add(id(part))
             bind = getattr(part, "bind", None)
             if bind:
                 bind(env, self)

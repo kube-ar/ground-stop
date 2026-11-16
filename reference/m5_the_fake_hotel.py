@@ -14,7 +14,7 @@ from groundstop.mesh import ALLOW, Call, Decision, Env, Mesh
 from groundstop.mesh.naive import DirectTransport, NoClaims, NoTracer, StaticDirectory
 
 KEY = hashlib.sha256(b"fragata mesh signing key (a secret in real life)").digest()
-LIFETIME = 3600.0
+LIFETIME = 900.0  # fifteen minutes: short-lived
 NEEDS_DELEGATION = {"app_hotel": "book_hotel"}  # messages that act for a passenger, and the scope they need
 
 
@@ -66,17 +66,20 @@ class Identity:
         if agent not in self.known or agent in self.revoked:
             return None
         token, expires = self.issued.get(agent, (None, 0.0))
-        if token is None or expires - self.env.now < 300:  # rotate before it runs out
+        if token is None or expires - self.env.now < 120:  # rotate before it runs out
             expires = self.env.now + LIFETIME
             token = _encode({"agent": agent, "expires": expires, "type": "agent"})
             self.issued[agent] = (token, expires)
         return token
 
-    def verify(self, credential: str | None) -> dict[str, Any] | None:
+    def verify(self, credential: str | None, at: float | None = None) -> dict[str, Any] | None:
+        """Valid when the message was sent (`at`): a message may wait in the workspace for a while.
+        A revoked agent's credentials are worthless whenever they were issued."""
         claims = _decode(credential)
         if not claims or claims.get("type") != "agent":
             return None
-        if claims["agent"] in self.revoked or claims["expires"] <= self.env.now:
+        when = self.env.now if at is None else at
+        if claims["agent"] in self.revoked or claims["expires"] <= when:
             return None
         return claims
 
@@ -93,9 +96,10 @@ class Identity:
             {"agent": agent, "pax": pax, "scope": list(scope), "expires": self.env.now + ttl, "type": "delegation"}
         )
 
-    def verify_delegation(self, token: str | None) -> dict[str, Any] | None:
+    def verify_delegation(self, token: str | None, at: float | None = None) -> dict[str, Any] | None:
         claims = _decode(token)
-        if not claims or claims.get("type") != "delegation" or claims["expires"] <= self.env.now:
+        when = self.env.now if at is None else at
+        if not claims or claims.get("type") != "delegation" or claims["expires"] <= when:
             return None
         return claims
 
@@ -114,7 +118,7 @@ class Gate:
             return Decision(False, f"unknown caller {call.caller}: no credential")
         if call.caller in getattr(identity, "revoked", set()):
             return Decision(False, f"{call.caller} has been revoked")
-        claims = identity.verify(call.credential)
+        claims = identity.verify(call.credential, call.sent_at)
         if claims is None:
             return Decision(False, f"{call.caller}'s credential is forged or expired")
         if claims["agent"] != call.caller:
@@ -125,7 +129,7 @@ class Gate:
             return Decision(False, f"no policy lets {call.caller} call {call.target}")
         scope = NEEDS_DELEGATION.get(call.action)
         if scope:
-            grant = identity.verify_delegation(call.delegation)
+            grant = identity.verify_delegation(call.delegation, call.sent_at)
             if grant is None:
                 return Decision(False, f"{call.action} acts for a passenger: its delegation is missing or expired")
             if grant["pax"] != call.body.get("pax") or scope not in grant["scope"] or grant["agent"] != call.caller:

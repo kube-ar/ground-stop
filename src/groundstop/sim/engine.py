@@ -223,7 +223,8 @@ class Engine:
         rt.epoch += 1  # stop it now: what it was working on goes back to its queue (if the transport keeps one)
         rt.busy = 0
         rt.local.clear()
-        self.mesh.transport.crashed(agent)
+        # after the message being handled right now is finished and acknowledged, not before
+        self.schedule(0, lambda: self.mesh.transport.crashed(agent))
         self.counters["quarantined"] += 1
         self.agent_log(agent, f"QUARANTINED by the mesh: {reason}")
         if agent in FIXES and rt.version != FIXES[agent][0]:
@@ -313,7 +314,9 @@ class Engine:
 
     def system_call(self, caller: str, system: str, op: str, args: dict[str, Any], current: Message | None) -> Any:
         target = f"{system}.{op}"
-        call = Call("system", caller, self.mesh.identity.credential(caller), target, op, dict(args), self._now)
+        call = Call(
+            "system", caller, self.mesh.identity.credential(caller), target, op, dict(args), self._now, None, self._now
+        )
         decision = self.mesh.gate.check(call)
         if not decision.allowed:
             self.counters["denied"] += 1
@@ -354,7 +357,15 @@ class Engine:
         rt.busy -= 1
         if not item.local:
             call = Call(
-                "message", item.sender, item.credential, rt.name, item.kind, item.body, self._now, item.delegation
+                "message",
+                item.sender,
+                item.credential,
+                rt.name,
+                item.kind,
+                item.body,
+                self._now,
+                item.delegation,
+                item.sent_at,
             )
             decision = self.mesh.gate.check(call)
             if not decision.allowed:

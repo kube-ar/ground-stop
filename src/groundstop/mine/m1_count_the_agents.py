@@ -4,7 +4,7 @@ Fast path: `groundstop.company.load_company()` reads the configs and `groundstop
 logs. Deep path: read company/*.toml with `tomllib` and parse the log lines yourself.
 
 Check: `uv run ground-stop check 1`. It replays two nights and runs these functions on their logs.
-Instructions: https://kube.ar/es/agentic-mesh/project/ground-stop/count-the-agents
+Instructions: https://kube.ar/agentic-mesh/project/ground-stop/count-the-agents (en español: https://kube.ar/es/agentic-mesh/project/ground-stop/count-the-agents)
 """
 
 from __future__ import annotations

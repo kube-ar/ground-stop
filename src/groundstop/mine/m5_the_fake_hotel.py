@@ -11,7 +11,7 @@ Two parts of the mesh, and the policies they read:
 - policies(): the rules as data, each with an owner, a version and the agents it applies to.
 
 Check: `uv run ground-stop check 5`.
-Instructions: https://kube.ar/es/agentic-mesh/project/ground-stop/the-fake-hotel
+Instructions: https://kube.ar/agentic-mesh/project/ground-stop/the-fake-hotel (en español: https://kube.ar/es/agentic-mesh/project/ground-stop/the-fake-hotel)
 """
 
 from __future__ import annotations
@@ -39,8 +39,12 @@ class Identity:
         """A signed, short-lived credential for an agent the mesh knows; None for anyone else."""
         raise NotImplementedError
 
-    def verify(self, credential: str | None) -> dict[str, Any] | None:
-        """What a valid credential says ({"agent", "expires"}), or None: forged, expired or revoked."""
+    def verify(self, credential: str | None, at: float | None = None) -> dict[str, Any] | None:
+        """What a valid credential says ({"agent", "expires"}), or None: forged, expired or revoked.
+
+        `at` is when the message was sent (the gate passes `call.sent_at`): a message can wait in the
+        workspace for half an hour while its agent is down, so judge the credential by that time.
+        A revoked agent's credentials are worthless whenever they were issued."""
         raise NotImplementedError
 
     def revoke(self, agent: str) -> None:
@@ -54,7 +58,7 @@ class Identity:
         """A token that lets `agent` act for passenger `pax`, only for `scope`, for `ttl` seconds."""
         raise NotImplementedError
 
-    def verify_delegation(self, token: str | None) -> dict[str, Any] | None:
+    def verify_delegation(self, token: str | None, at: float | None = None) -> dict[str, Any] | None:
         """What a valid delegated token says ({"agent", "pax", "scope", "expires"}), or None."""
         raise NotImplementedError
 

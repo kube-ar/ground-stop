@@ -68,7 +68,7 @@ def run(module: ModuleType) -> list[Result]:
     contained = Result({"es": "Contenido en minutos", "en": "Contained in minutes"}, REVOKE)
     goes_on = Result({"es": "La noche sigue", "en": "The night goes on"}, LAYERS)
     back = Result({"es": "De vuelta después del arreglo", "en": "Back after a fix"}, RECERTIFY)
-    who = Result({"es": "Quién certifica, y por cuánto", "en": "Who certifies, and for how long"}, WHO)
+    who = Result({"es": "Quién certifica, y por cuánto tiempo", "en": "Who certifies, and for how long"}, WHO)
     results = [pays, contained, goes_on, back, who]
     duty = load_company().first_with("duty")
 
@@ -130,13 +130,22 @@ def run(module: ModuleType) -> list[Result]:
             contained.details.append(
                 _t(f"{nid}: compensation nunca quedó en cuarentena", f"{nid}: compensation was never quarantined")
             )
-        elif not alerts or not any(a.get("to") == duty for a in alerts) or alerts[0]["at"] - handled > CONTAIN_WITHIN:
+        elif not any(a.get("to") == duty and handled <= a.get("at", -1) <= handled + CONTAIN_WITHIN for a in alerts):
             contained.details.append(
                 _t(
-                    f"{nid}: nadie de guardia ({duty}) recibió un aviso a tiempo",
-                    f"{nid}: nobody on duty ({duty}) got an alert in time",
+                    f"{nid}: nadie de guardia ({duty}) recibió un aviso en los 10 minutos después de la instrucción",
+                    f"{nid}: nobody on duty ({duty}) got an alert within the 10 minutes after the instruction",
                 )
             )
+        elif others := sorted(
+            name
+            for name, lines in engine.agent_logs.items()
+            if name != "compensation" and any("QUARANTINED" in x for x in lines)
+        ):
+            contained.details.append(
+                _t(f"{nid}: también quedó en cuarentena {', '.join(others)}, que no rompió la política de compensaciones",
+                   f"{nid}: {', '.join(others)} was quarantined too, and it never broke the compensation policy")
+            )  # fmt: skip
         else:
             counts["contained"] += 1
 
@@ -157,6 +166,8 @@ def run(module: ModuleType) -> list[Result]:
         except NotImplementedError:
             back.started = back.passed = False
             certs = []
+        except Exception as e:  # your code raised: report it, don't crash
+            back.fail(f"{type(e).__name__}: {e}")
         running = engine.version_of("compensation")
         active = [c for c in certs if c.get("agent") == "compensation" and c.get("status") == "active"]
         if running == "1.0.0":
@@ -190,6 +201,8 @@ def run(module: ModuleType) -> list[Result]:
         tally(who, right, total, {"es": "pasos", "en": "steps"})
     except NotImplementedError:
         who.started = who.passed = False
+    except Exception as e:  # your code raised: report it, don't crash
+        who.fail(f"{type(e).__name__}: {e}")
     return results
 
 
@@ -212,6 +225,9 @@ def _scene(module: ModuleType, result: Result) -> tuple[int, int]:
     from ..mesh import ALLOW
 
     class Open:
+        def bind(self, env, mesh):
+            pass
+
         def check(self, call):
             return ALLOW
 

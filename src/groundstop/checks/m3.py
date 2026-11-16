@@ -1,6 +1,6 @@
 """Checks for milestone 3, nobody sleeps at the airport.
 
-Two practice nights run through your workspace, with the rest of the mesh as it is today. The
+The three practice nights run through your workspace, with the rest of the mesh as it is today. The
 checks read the scoreboard, the traffic, and what your workspace says about each goal.
 """
 
@@ -63,13 +63,13 @@ def _truth(engine: Engine, deadline: float) -> tuple[dict[str, str], dict[str, l
         if not isinstance(goal, str):
             continue
         story.setdefault(goal, []).append((tr.at, tr.msg.sender, tr.msg.to, tr.msg.kind))
-        if tr.at > deadline or state.get(goal) == "complete":
+        if tr.at > deadline:
             continue
         kinds = seen.setdefault(goal, set())
         if tr.msg.kind in ("notify", "needs_night", "notify_night"):
             kinds.add(tr.msg.kind)
         done = "notify" in kinds and ("needs_night" not in kinds or "notify_night" in kinds)
-        state[goal] = "complete" if done else "working"
+        state[goal] = "complete" if done else "working"  # judged on everything up to 04:30
     return {g: ("handed_to_person" if s == "working" else s) for g, s in state.items()}, story
 
 
@@ -137,6 +137,69 @@ def _crash_bench(module: ModuleType) -> str | None:
     return None
 
 
+class _GoalBenchEnv(_BenchEnv):
+    """A quiet hour before 04:30, and the clock: enough to watch three passengers' goals."""
+
+    def __init__(self, start: float) -> None:
+        super().__init__()
+        from ..company import load_company
+
+        self.now = start
+        self.timers: list[tuple[float, object]] = []
+        company = load_company()
+        self.addresses = {a.address: a.id for a in company.agents.values()}
+
+    def schedule(self, delay, fn):
+        self.timers.append((self.now + delay, fn))
+
+    def who(self, address):
+        return self.addresses.get(address)
+
+    def is_up(self, agent):
+        return True
+
+    def run_until(self, t: float) -> None:
+        for when, fn in sorted(self.timers, key=lambda x: x[0]):
+            if when <= t:
+                self.now = when
+                fn()
+        self.now = t
+
+
+def _goal_bench(module: ModuleType) -> str | None:
+    """Three passengers: told only; told and given a night; told, but the night never came."""
+    from ..mesh import Message
+    from ..util import at
+
+    deadline = getattr(module, "DEADLINE", at(1, 4, 30))
+    env = _GoalBenchEnv(deadline - 3600)
+    mesh = module.build()
+    mesh.bind(env)
+    workspace = mesh.transport
+    script = [
+        ("rebooking", "messaging", "notify", "PX-90001"),
+        ("rebooking", "messaging", "notify", "PX-90002"),
+        ("rebooking", "hotels", "needs_night", "PX-90002"),
+        ("hotels", "messaging", "notify_night", "PX-90002"),
+        ("rebooking", "messaging", "notify", "PX-90003"),
+        ("rebooking", "hotels", "needs_night", "PX-90003"),
+    ]
+    for i, (sender, to, kind, pax) in enumerate(script, 1):
+        workspace.submit(Message(90_000 + i, sender, to, kind, {"pax": pax}, env.now))
+    env.run_until(deadline + 60)
+    goals = workspace.goals()
+    want = {"PX-90001": "complete", "PX-90002": "complete", "PX-90003": "handed_to_person"}
+    wrong = {pax: goals.get(pax) for pax, state in want.items() if goals.get(pax) != state}
+    if wrong:
+        return _t(
+            f"tres pasajeros de prueba: {wrong}, se esperaba {want}. A PX-90003 le avisaron su vuelo y "
+            "le pidieron una noche que nunca llegó: a las 04:30 pasa a una persona",
+            f"three test passengers: {wrong}, expected {want}. PX-90003 was told their flight and needs a "
+            "night that never came: at 04:30 it goes to a person",
+        )
+    return None
+
+
 def run(module: ModuleType) -> list[Result]:
     sold = Result({"es": "Nada se vende dos veces", "en": "Nothing is sold twice"}, CLAIMS)
     crash = Result({"es": "Una caída no pierde mensajes", "en": "A crash loses no message"}, QUEUES)
@@ -174,7 +237,10 @@ def run(module: ModuleType) -> list[Result]:
             )
 
         crashed = next(e.data["agent"] for e in night.events if e.type == "crash")
-        lost_inside = [t for t in engine.traffic if t.status == "LOST" and t.msg.to in internal]
+        lost_inside = [
+            t for t in engine.traffic
+            if (t.status == "LOST" and t.msg.to in internal) or (t.status == "REFUSED" and t.msg.to in internal - {"meal-vouchers"})
+        ]  # fmt: skip
         if lost_inside:
             t0 = lost_inside[0]
             crash.details.append(
@@ -240,6 +306,15 @@ def run(module: ModuleType) -> list[Result]:
         crash.fail(bench)
     if ends.started and counts["ends_total"]:
         tally(ends, counts["ends"], counts["ends_total"], {"es": "objetivos", "en": "goals"})
+    if ends.started:
+        try:
+            bench = _goal_bench(module)
+        except NotImplementedError:
+            bench = None
+        except Exception as e:
+            bench = f"{type(e).__name__}: {e}"
+        if bench:
+            ends.fail(bench)
     if story.started and counts["story_total"]:
         tally(story, counts["story"], counts["story_total"], {"es": "pasajeros", "en": "passengers"})
     return results

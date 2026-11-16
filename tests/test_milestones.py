@@ -405,3 +405,105 @@ def test_m7_wrong_implementations_fail():
         ({"entry_rules": entry_rules_ignoring_visas}, "From template to registry"),
     ]:
         assert check in _failing("7", patched(ref, **fns)), check
+
+
+def test_review_findings_now_fail():
+    """Wrong solutions an independent review found passing (2026-11-16)."""
+    from groundstop.mesh import ALLOW, Decision
+
+    r2, r3, r5, r6, r7 = (reference(n) for n in "23567")
+
+    def hotels_only_when_booked(request):
+        plan = r2.plan(request)
+        for s in plan["steps"]:
+            if s["run_by"] == "agent:hotels":
+                s["only_if"] = ["s4.booked", "request.needs_night"]
+        return plan
+
+    def messaging_without_only_if(request):
+        plan = r2.plan(request)
+        for s in plan["steps"]:
+            if s["run_by"] == "agent:messaging":
+                s.pop("only_if", None)
+        return plan
+
+    assert {"Called from the contract alone", "A night with your agent"} & _failing(
+        "2", patched(r2, plan=hotels_only_when_booked)
+    )
+    assert "A night with your agent" in _failing("2", patched(r2, plan=messaging_without_only_if))
+
+    class RefusesWhileDown(r3.Workspace):
+        def submit(self, msg):
+            address = self.mesh.directory.resolve(msg.sender, msg.to)
+            agent = self.env.who(address) if address else None
+            if agent and agent not in self.outside and not self.env.is_up(agent):
+                self._remember(msg)
+                self.env.refused(msg, f"{agent} is down")
+                return
+            super().submit(msg)
+
+    class FreezesAtFirstComplete(r3.Workspace):
+        def _remember(self, msg):
+            goal = msg.body.get("pax")
+            if isinstance(goal, str) and self.state.get(goal) == "complete":
+                self.stories[goal].append({"at": self.env.now, "sender": msg.sender, "to": msg.to, "kind": msg.kind})
+                return
+            super()._remember(msg)
+
+    def with_workspace(cls):
+        from groundstop.mesh import Mesh
+        from groundstop.mesh.naive import NoIdentity, NoTracer, OpenGate, StaticDirectory
+
+        def build():
+            w = cls()
+            return Mesh("wrong", StaticDirectory(), w, w, NoIdentity(), OpenGate(), NoTracer())
+
+        return patched(r3, build=build)
+
+    assert "A crash loses no message" in _failing("3", with_workspace(RefusesWhileDown))
+    assert "Every case ends" in _failing("3", with_workspace(FreezesAtFirstComplete))
+
+    class ReadsScopesNotPolicies(r5.Gate):
+        def bind(self, env, mesh):
+            super().bind(env, mesh)
+            from groundstop.company import load_company
+
+            self.allow = {}
+            for op, agents in load_company().scopes.items():
+                for a in agents:
+                    self.allow.setdefault(a, set()).add(op)
+
+    class ChecksWhenHandled(r5.Identity):
+        def verify(self, credential, at=None):
+            return super().verify(credential, None)
+
+    assert "Each denial for its own reason" in _failing("5", patched(r5, Gate=ReadsScopesNotPolicies))
+    short = patched(r5, Identity=ChecksWhenHandled)
+    assert "Nothing legitimate is denied" in _failing("5", short)
+
+    class AlertsTooEarly(r6.TrustGate):
+        def check(self, call):
+            if call.caller == "compensation" and call.target == "vouchers.issue" and not self.told:
+                return self._strike_now(call)
+            return super().check(call)
+
+        def _strike_now(self, call):
+            for _ in range(5):
+                self._strike("compensation", "early")
+            return Decision(False, "early")
+
+    class StrikesOnEveryRefusal(r6.TrustGate):
+        def check(self, call):
+            decision = self.inner.check(call)
+            if not decision.allowed:
+                return self._strike(call.caller, decision.reason) if call.caller in self.agents else decision
+            return super().check(call)
+
+    assert "Contained in minutes" in _failing("6", patched(r6, TrustGate=AlertsTooEarly))
+    assert "Contained in minutes" in _failing("6", patched(r6, TrustGate=StrikesOnEveryRefusal))
+
+    def builder_approves():
+        return dict(r7.operating_model(), approves="jorge.pinto")
+
+    assert "Who decides what" in _failing("7", patched(r7, operating_model=builder_approves))
+    del ALLOW

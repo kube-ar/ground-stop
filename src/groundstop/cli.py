@@ -8,6 +8,7 @@ ground-stop replay --rebooking mine    ...with your rebooking agent from milesto
 ground-stop replay f1 --mesh mine --rebooking mine --entry-rules mine   your whole platform, on a final night
 ground-stop --lang en replay           in English (or set GROUND_STOP_LANG=en)
 ground-stop trace PX-48187 --mesh mine one passenger's trace, through your mesh's tracer (milestone 4)
+ground-stop check platform             your whole platform on the final nights (after milestone 7)
 ground-stop check 1                    run milestone 1's checks on your code (--reference: on the reference)
 ground-stop use-reference 1            swap your file for the reference (yours is kept as *.mine.py; --undo)
 ground-stop generate --pack standard   rebuild a pack of nights from its seeds
@@ -140,12 +141,50 @@ def _milestone(mid: str):
     return MILESTONES[mid]
 
 
+def cmd_platform() -> None:
+    """Your whole platform (mine/mesh.py, your rebooking, your entry-rules agent) on the final nights."""
+    import importlib
+
+    from .agents.planned import planned_rebooking
+    from .checks.m7 import FINAL_BAR
+    from .mesh import build
+    from .night.model import load
+    from .score import score
+    from .sim.engine import Engine
+
+    mine = importlib.import_module("groundstop.mine.m2_a_contract_for_rebooking")
+    try:
+        entry = importlib.import_module("groundstop.mine.m7_the_next_storm").entry_rules()
+        build("groundstop.mine.mesh")
+    except NotImplementedError:
+        sys.exit(t("platform.not_ready"))
+    print(t("platform.title"))
+    passed = 0
+    nights = sorted((NIGHTS / "final").glob("*.json"))
+    for path in nights:
+        night = load(path)
+        try:
+            mesh = build("groundstop.mine.mesh")
+            board = score(Engine(night, mesh, agents={"rebooking": planned_rebooking(mine)}, new_agents=[entry]).run())
+        except NotImplementedError:
+            sys.exit(t("platform.not_ready"))
+        share = board.rehoused / board.total
+        passed += share >= FINAL_BAR
+        mark = "✓" if share >= FINAL_BAR else "✗"
+        print(f"  {mark} {night.id}  {num(board.rehoused)} / {num(board.total)}  {share:.1%}")
+    print(t("platform.summary", passed=passed, total=len(nights), bar=f"{FINAL_BAR:.0%}"))
+    sys.exit(0 if passed == len(nights) else 1)
+
+
 def cmd_check(args) -> None:
     import importlib
     import importlib.util
 
     from .checks.core import report
 
+    if args.milestone == "platform":
+        cmd_platform()
+        return
     m = _milestone(args.milestone)
     if args.reference:
         path = ROOT / m.reference
@@ -198,16 +237,18 @@ def main(argv: list[str] | None = None) -> None:
 
     parser = argparse.ArgumentParser(prog="ground-stop", description=t("cli.description"))
     parser.add_argument("--lang", choices=LANGS, help=t("cli.lang"))
+    common = argparse.ArgumentParser(add_help=False)  # so --lang also works after the command
+    common.add_argument("--lang", choices=LANGS, default=argparse.SUPPRESS, help=t("cli.lang"))
     sub = parser.add_subparsers(dest="command", required=True)
 
-    p = sub.add_parser("nights", help=t("cli.help.nights"))
+    p = sub.add_parser("nights", parents=[common], help=t("cli.help.nights"))
     p.set_defaults(fn=cmd_nights)
 
-    p = sub.add_parser("show", help=t("cli.help.show"))
+    p = sub.add_parser("show", parents=[common], help=t("cli.help.show"))
     p.add_argument("night", nargs="?", default="p1")
     p.set_defaults(fn=cmd_show)
 
-    p = sub.add_parser("replay", help=t("cli.help.replay"))
+    p = sub.add_parser("replay", parents=[common], help=t("cli.help.replay"))
     p.add_argument("night", nargs="?", default="p1")
     p.add_argument("--mesh", default="naive", help=t("cli.help.mesh"))
     p.add_argument("--rebooking", help=t("cli.help.rebooking"))
@@ -215,23 +256,23 @@ def main(argv: list[str] | None = None) -> None:
     p.add_argument("--out", help=t("cli.help.out"))
     p.set_defaults(fn=cmd_replay)
 
-    p = sub.add_parser("trace", help=t("cli.help.trace"))
+    p = sub.add_parser("trace", parents=[common], help=t("cli.help.trace"))
     p.add_argument("pax")
     p.add_argument("night", nargs="?", default="p1")
     p.add_argument("--mesh", default="mine", help=t("cli.help.mesh"))
     p.set_defaults(fn=cmd_trace)
 
-    p = sub.add_parser("check", help=t("cli.help.check"))
+    p = sub.add_parser("check", parents=[common], help=t("cli.help.check"))
     p.add_argument("milestone")
     p.add_argument("--reference", action="store_true", help=t("cli.help.reference"))
     p.set_defaults(fn=cmd_check)
 
-    p = sub.add_parser("use-reference", help=t("cli.help.use_reference"))
+    p = sub.add_parser("use-reference", parents=[common], help=t("cli.help.use_reference"))
     p.add_argument("milestone")
     p.add_argument("--undo", action="store_true", help=t("cli.help.undo"))
     p.set_defaults(fn=cmd_use_reference)
 
-    p = sub.add_parser("generate", help=t("cli.help.generate"))
+    p = sub.add_parser("generate", parents=[common], help=t("cli.help.generate"))
     p.add_argument("--pack", required=True, choices=["practice", "standard", "final"])
     p.set_defaults(fn=cmd_generate)
 

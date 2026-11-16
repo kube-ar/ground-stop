@@ -9,7 +9,7 @@ It also keeps the goals: one per passenger, with its story and its state.
 Check: `uv run ground-stop check 3`. See it in a night: put your Workspace in mine/mesh.py and run
 `uv run ground-stop replay --mesh mine`.
 
-Instructions: https://kube.ar/es/agentic-mesh/project/ground-stop/nobody-sleeps-at-the-airport
+Instructions: https://kube.ar/agentic-mesh/project/ground-stop/nobody-sleeps-at-the-airport (en español: https://kube.ar/es/agentic-mesh/project/ground-stop/nobody-sleeps-at-the-airport)
 """
 
 from __future__ import annotations

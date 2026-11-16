@@ -59,6 +59,7 @@ Cada hito cambia una pieza de la malla, y el mismo marcador muestra qué arregla
 | `ground-stop replay p1 --mesh mine` | con tu malla (`src/groundstop/mine/mesh.py`) |
 | `ground-stop --lang en replay` | en inglés (o `GROUND_STOP_LANG=en`) |
 | `ground-stop trace PX-48187 --mesh mine` | la traza de un pasajero, con tu tracer (hito 4) |
+| `ground-stop check platform` | tu plataforma entera en las noches finales (después del hito 7) |
 | `ground-stop replay f1 --mesh mine --rebooking mine --entry-rules mine` | tu plataforma entera, en una noche final (hito 7) |
 
 Con Docker: `docker compose run --rm ground-stop show p1`.
@@ -97,9 +98,9 @@ Tu código va en `src/groundstop/mine/`, un archivo por hito. `uv run ground-sto
 | 6 | [Cuarentena](https://kube.ar/es/agentic-mesh/project/ground-stop/quarantine): certificación, topes y cuarentena | Seguridad y confianza | listo |
 | 7 | [La próxima tormenta](https://kube.ar/es/agentic-mesh/project/ground-stop/the-next-storm): fábrica, pipeline, retiro y el paquete final | Agentes a escala de empresa | listo |
 
-Camino rápido: Python y SQLite, unas 3 a 4 horas por hito (unas 20 en total). Camino a fondo: las
-mismas comprobaciones sobre la infraestructura que usaría una empresa (NATS, OPA, step-ca,
-OpenTelemetry).
+Camino rápido: objetos de Python y las bibliotecas que sugiere cada página (pydantic, PyJWT), entre
+media hora y 4 horas y media por hito (unas 23 en total). Camino a fondo: las mismas comprobaciones,
+con más construido a mano (SQLite, claves por agente, un índice de embeddings) y más casos.
 
 ---
 
@@ -142,6 +143,7 @@ shows what you fixed.
 | `ground-stop replay s2` | replay another night |
 | `ground-stop replay p1 --mesh mine` | with your mesh (`src/groundstop/mine/mesh.py`) |
 | `ground-stop trace PX-48187 --mesh mine` | one passenger's trace, through your tracer (milestone 4) |
+| `ground-stop check platform` | your whole platform on the final nights (after milestone 7) |
 | `ground-stop replay f1 --mesh mine --rebooking mine --entry-rules mine` | your whole platform, on a final night (milestone 7) |
 
 Every `replay` leaves its logs in `runs/<night>/`: `traffic.log` (every message between agents,
@@ -178,8 +180,9 @@ puts it back).
 | 6 | [Quarantine](https://kube.ar/agentic-mesh/project/ground-stop/quarantine): certification, caps and quarantine | Security and trust | ready |
 | 7 | [The next storm](https://kube.ar/agentic-mesh/project/ground-stop/the-next-storm): factory, pipeline, retirement and the final pack | Agents at company scale | ready |
 
-Fast path: Python and SQLite, about 3–4 hours per milestone (about 20 in all). Deep path: the same
-checks on the infrastructure a company would run (NATS, OPA, step-ca, OpenTelemetry).
+Fast path: plain Python objects and the libraries each page suggests (pydantic, PyJWT), from half an
+hour to four and a half hours per milestone (about 23 in all). Deep path: the same checks, with more
+built by hand (SQLite, a key pair per agent, an embedding index) and more cases.
 
 Fragata, Garoa Linhas Aéreas, Hoteles Ondelia and every passenger are fictional; passenger names
 are random combinations of common first names and surnames. Tocumen, Panama City and the airports

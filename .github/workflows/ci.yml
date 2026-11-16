@@ -4,6 +4,7 @@ on:
   pull_request:
 jobs:
   test:
+    if: github.repository == 'kube-ar/ground-stop'  # your copy's CI stays quiet: your code changes the starters
     runs-on: ubuntu-latest
     strategy:
       matrix:

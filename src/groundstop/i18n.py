@@ -102,6 +102,18 @@ TEXT: dict[str, dict[str, str]] = {
         "es": "mine (tu agente de reglas de entrada del hito 7) o un módulo con entry_rules()",
         "en": "mine (your entry-rules agent from milestone 7) or a module with entry_rules()",
     },
+    "platform.title": {
+        "es": "Tu plataforma entera (mine/mesh.py, tu reprogramación y tu agente de reglas de entrada) en las noches finales:",
+        "en": "Your whole platform (mine/mesh.py, your rebooking and your entry-rules agent) on the final nights:",
+    },
+    "platform.not_ready": {
+        "es": "Tu plataforma todavía no está completa: alguna parte de src/groundstop/mine/ sigue lanzando NotImplementedError.",
+        "en": "Your platform isn't complete yet: some part of src/groundstop/mine/ still raises NotImplementedError.",
+    },
+    "platform.summary": {
+        "es": "{passed}/{total} noches por encima del {bar} de reubicados",
+        "en": "{passed}/{total} nights at or above {bar} rehoused",
+    },
     "cli.help.out": {
         "es": "carpeta para los logs (por defecto runs/<noche>/)",
         "en": "folder for the logs (default runs/<night>/)",

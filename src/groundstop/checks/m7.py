@@ -22,7 +22,7 @@ from ..night.model import load
 from ..score import score
 from ..sdk import Agent
 from ..sim.engine import Engine
-from .core import Result, reference, tally
+from .core import Result, guard, reference, tally
 
 
 def _l(slug: str, es: tuple[str, str], en: tuple[str, str]) -> Lesson:
@@ -52,6 +52,11 @@ RETIRE = _l(
 ECOSYSTEM = _l(
     "agent-adoption-roadmap", ("T4: un ecosistema", "t4-un-ecosistema"), ("Q4: an ecosystem", "q4-an-ecosystem")
 )
+RIGHTS = _l(
+    "agent-operating-model",
+    ("Estructura: derechos de decisión", "estructura-derechos-de-decisión"),
+    ("Structure: decision rights", "structure-decision-rights"),
+)
 GATES = ("tests", "benchmark", "security", "certification")
 FINAL_BAR = 0.95
 
@@ -75,6 +80,9 @@ class _Env:
 
 
 class _Open:
+    def bind(self, env, mesh):
+        pass
+
     def check(self, call):
         return ALLOW
 
@@ -116,14 +124,19 @@ def run(module: ModuleType) -> list[Result]:
     stopped = Result({"es": "Un control frena una mala versión", "en": "A gate stops a bad version"}, PIPELINE)
     nobody = Result({"es": "Nadie va adonde no puede", "en": "Nobody sent where they can't go"}, STAGES)
     retired = Result({"es": "Retirar con seguridad", "en": "Retire safely"}, RETIRE)
+    rights = Result({"es": "Quién decide qué", "en": "Who decides what"}, RIGHTS)
     storm = Result({"es": "La próxima tormenta", "en": "The next storm"}, ECOSYSTEM)
-    results = [built, stopped, nobody, retired, storm]
+    results = [built, stopped, nobody, retired, rights, storm]
 
     try:
         candidate = module.entry_rules()
     except NotImplementedError:
         for r in results:
             r.started = r.passed = False
+        return results
+    except Exception as e:  # your code raised: report it, don't crash
+        for r in results:
+            r.fail(f"{type(e).__name__}: {e}")
         return results
     missing = [
         k
@@ -145,6 +158,10 @@ def run(module: ModuleType) -> list[Result]:
     except NotImplementedError:
         for r in results:
             r.started = r.passed = False
+        return results
+    except Exception as e:  # your code raised: report it, don't crash
+        for r in results:
+            r.fail(f"{type(e).__name__}: {e}")
         return results
     gates = {g.get("gate"): g for g in report.get("gates", [])}
     problems = [
@@ -218,8 +235,19 @@ def run(module: ModuleType) -> list[Result]:
         tally(retired, right, 4, {"es": "pasos", "en": "steps"})
     except NotImplementedError:
         retired.started = retired.passed = False
+    except Exception as e:  # your code raised: report it, don't crash
+        retired.fail(f"{type(e).__name__}: {e}")
 
-    # 5. the final pack
+    # 5. who decides what
+    if hasattr(module, "operating_model"):
+        ok, model = guard(rights, module.operating_model)
+        if ok and isinstance(model, dict):
+            right, total = _decision_rights(model, rights)
+            tally(rights, right, total, {"es": "reglas", "en": "rules"})
+    else:
+        rights.started = rights.passed = False
+
+    # 6. the final pack
     m2 = reference("2")
     right = 0
     for path in sorted((NIGHTS / "final").glob("*.json")):
@@ -260,7 +288,15 @@ def _retire_scene(module: ModuleType, result: Result) -> int:
         else:
             result.details.append(_t(f"con llamadas todavía: {first}", f"with callers still: {first}"))
         moved = Path(tmp) / "moved.log"
-        moved.write_text("\n".join(line for line in log.read_text().splitlines() if "-> lodging" not in line) + "\n")
+        address = load_company().agents["lodging"].address
+        moved.write_text(
+            "\n".join(
+                line
+                for line in log.read_text().splitlines()
+                if "-> lodging " not in line and f"-> {address} " not in line
+            )
+            + "\n"
+        )
         second = module.retire("lodging", moved, registry, trust, by=owner)
         if second.get("retired"):
             right += 1
@@ -283,3 +319,34 @@ def _retire_scene(module: ModuleType, result: Result) -> int:
     else:
         result.details.append(_t("su certificación sigue activa", "its certification is still active"))
     return right
+
+
+def _decision_rights(model: dict, result: Result) -> tuple[int, int]:
+    """Each decision belongs to someone with the right role, and nobody checks their own work."""
+    people = load_company().people
+
+    def role(decision: str) -> str | None:
+        return people.get(model.get(decision, ""), {}).get("role")
+
+    def team(decision: str) -> str | None:
+        return people.get(model.get(decision, ""), {}).get("team")
+
+    unknown = [
+        d for d in ("asks", "builds", "approves", "certifies", "on_call", "retires") if model.get(d) not in people
+    ]
+    rules = [
+        (_t("cada decisión tiene una persona de company/people.toml", "every decision has a person from company/people.toml"), not unknown),
+        (_t("pide y construye el equipo de Aeropuerto", "Airport asks for it and builds it"), team("asks") == "airport" and team("builds") == "airport"),
+        (_t("aprueba un revisor", "a reviewer approves"), role("approves") == "reviewer"),
+        (_t("certifica un certificador", "a certifier certifies"), role("certifies") == "certifier"),
+        (_t("de guardia está la persona de guardia", "the person on duty is on call"), role("on_call") == "duty"),
+        (_t("quien lo construye no lo aprueba ni lo certifica", "whoever builds it neither approves nor certifies it"),
+         model.get("builds") not in (model.get("approves"), model.get("certifies"))),
+    ]  # fmt: skip
+    right = 0
+    for name, ok in rules:
+        if ok:
+            right += 1
+        else:
+            result.details.append(name)
+    return right, len(rules)

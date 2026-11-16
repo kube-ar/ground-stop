@@ -10,7 +10,7 @@ sandbox; benchmark() replays practice nights with and without a new agent; calls
 systems an agent's code calls.
 
 Check: `uv run ground-stop check 7`.
-Instructions: https://kube.ar/es/agentic-mesh/project/ground-stop/the-next-storm
+Instructions: https://kube.ar/agentic-mesh/project/ground-stop/the-next-storm (en español: https://kube.ar/es/agentic-mesh/project/ground-stop/the-next-storm)
 """
 
 from __future__ import annotations
@@ -39,7 +39,10 @@ class TemplateAgent(Agent):
 def new_agent(spec: dict[str, Any], decide: Callable[[dict, Ctx], dict]) -> dict[str, Any]:
     """The factory. From a spec (see ENTRY_RULES) and a decision function, a candidate:
     {"id", "version", "team", "purpose", "address", "cls" (a TemplateAgent subclass), "needs",
-    "tests", "contract"}."""
+    "tests", "contract"}.
+
+    The subclass keeps the spec in `spec` and the decision in `decide` (a staticmethod): the
+    check builds bad versions of your agent from them."""
     raise NotImplementedError
 
 
@@ -66,12 +69,28 @@ def entry_rules() -> dict[str, Any]:
 def pipeline(candidate: dict[str, Any], registry: Any, trust: Any) -> dict[str, Any]:
     """Every new agent passes the same gates, in order: tests, benchmark, security, certification.
     Register it (publish, then approve) only if all four pass. Return
-    {"gates": [{"gate", "passed", "detail"}, ...], "registered": bool}."""
+    {"gates": [{"gate", "passed", "detail"}, ...], "registered": bool}.
+
+    `trust` is milestone 6's trust gate: trust.certify(id, version, by=<a certifier>,
+    evidence={"tests": "passed", ...}) certifies only with that evidence. People and roles are in
+    company/people.toml."""
     raise NotImplementedError
 
 
 def retire(agent: str, traffic: Any, registry: Any, trust: Any, by: str) -> dict[str, Any]:
-    """Retire an agent safely: refuse while anything in `traffic` (a traffic.log) still calls it;
-    otherwise retire it in the registry and revoke its certification, keeping its history.
-    Return {"retired": bool, "callers": [...]}."""
+    """Retire an agent safely: refuse while anything in `traffic` (a traffic.log) still sends it
+    messages, by name or at its address; otherwise retire it in the registry and revoke its
+    certification, keeping its history. Return {"retired": bool, "callers": [...]}."""
+    raise NotImplementedError
+
+
+DECISIONS = ("asks", "builds", "approves", "certifies", "on_call", "retires")
+
+
+def operating_model() -> dict[str, str]:
+    """Who decides what for entry-rules: each decision in DECISIONS → a person in company/people.toml.
+
+    asks: who asks for the agent · builds: who builds it · approves: who approves it into the
+    registry · certifies: who certifies it · on_call: who is woken up when it misbehaves at 03:00
+    · retires: who decides to retire it."""
     raise NotImplementedError

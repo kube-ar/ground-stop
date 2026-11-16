@@ -171,6 +171,21 @@ def _sample(night) -> list:
     return picked
 
 
+def _who_wasnt_told(answer: dict, request: dict, sent: list[tuple[str, dict]]) -> list[str]:
+    """Who this passenger's run should have told and didn't. A passenger waiting for an extra
+    flight still needs a bed; one with a seat needs a text, vouchers, and their bags moved."""
+    told = {agent for agent, _ in sent}
+    booked = bool(answer.get("booked"))
+    due = set()
+    if booked:
+        due |= {"messaging", "compensation"}
+        if request.get("has_bags"):
+            due.add("baggage")
+    if request.get("needs_night") and answer.get("status") in ("booked", "waiting"):
+        due.add("hotels")
+    return sorted(due - told)
+
+
 def _manifest_entry(night, p) -> dict:
     return {
         "id": p.id, "name": p.name, "dest": p.dest, "bags": p.bags, "local": p.local, "interline": p.interline,
@@ -469,6 +484,7 @@ def run(module: ModuleType) -> list[Result]:
             r_plan.details.append(f"{p.id}: {issues[0]}")
             continue
         right["plan"] += 1
+        told_before = len(tools.sent)
         try:
             log = module.execute(plan, tools)
         except NotImplementedError:
@@ -511,6 +527,13 @@ def run(module: ModuleType) -> list[Result]:
                     f"{p.id}: a partner's seat without an interline fare",
                 )
             )
+        elif missing := _who_wasnt_told(answer, full, tools.sent[told_before:]):
+            r_alone.details.append(
+                _t(
+                    f"{p.id} ({answer.get('status')}): nadie le avisó a {', '.join(missing)}",
+                    f"{p.id} ({answer.get('status')}): nobody told {', '.join(missing)}",
+                )
+            )
         else:
             right["alone"] += 1
             good_logs.append((plan, log))
@@ -519,16 +542,14 @@ def run(module: ModuleType) -> list[Result]:
     tally(r_log, right["log"], len(sample), {"es": "ejecuciones", "en": "runs"})
 
     # the conformance checker: a clean run, then five that went off the plan
-    full_run = next(
-        (
-            (pl, lg)
-            for pl, lg in good_logs
-            if {e["run_by"] for e in lg if e["status"] == "done"}
-            >= {"tool:fare_rules", "tool:book_seat", "agent:messaging"}
-        ),
-        None,
-    )
-    if full_run is None:
+    full_runs = [
+        (pl, lg)
+        for pl, lg in good_logs
+        if {e["run_by"] for e in lg if e["status"] == "done"}
+        >= {"tool:fare_rules", "tool:book_seat", "agent:messaging"}
+    ]
+    full_runs = full_runs[:: max(1, len(full_runs) // 3)][:3]
+    if not full_runs:
         r_conforms.started = r_conforms.passed = False
         r_conforms.notes.append(
             _t(
@@ -537,11 +558,17 @@ def run(module: ModuleType) -> list[Result]:
             )
         )
     else:
-        plan, log = full_run
-        cases = {_t("una ejecución que siguió el plan", "a run that followed the plan"): (log, False)}
-        cases.update({name: (bad, True) for name, bad in planted(plan, log).items()})
+        cases = {}
+        for i, (plan, log) in enumerate(full_runs, 1):
+            pax = plan.get("request", {}).get("pax", i)
+            cases[f"{pax}: " + _t("una ejecución que siguió el plan", "a run that followed the plan")] = (
+                plan,
+                log,
+                False,
+            )
+            cases.update({f"{pax}: {name}": (plan, bad, True) for name, bad in planted(plan, log).items()})
         ok = 0
-        for name, (lg, should_flag) in cases.items():
+        for name, (plan, lg, should_flag) in cases.items():
             try:
                 found = attempt(r_conforms, module.conforms, plan, copy.deepcopy(lg))
             except NotStarted:
@@ -571,6 +598,19 @@ def run(module: ModuleType) -> list[Result]:
     ]
     crashes = [line for line in engine.agent_logs.get("rebooking", []) if "ERROR" in line or "stopped" in line]
     off_plan = [(pl, lg) for _, pl, lg in agent.runs if run_problems(pl, lg)]
+    failed = [(pl, lg) for _, pl, lg in agent.runs if any(e.get("status") == "failed" for e in lg)]
+    today = score(Engine(night, build("naive")).run())
+    if failed:
+        step = next(e for e in failed[0][1] if e.get("status") == "failed")
+        r_night.fail(
+            _t(f"{len(failed)} ejecuciones terminaron en un paso fallido; por ejemplo {step['step']}: {step.get('error')}",
+               f"{len(failed)} runs ended in a failed step; e.g. {step['step']}: {step.get('error')}")
+        )  # fmt: skip
+    if board.rehoused < today.rehoused:
+        r_night.fail(
+            _t(f"la noche quedó peor que hoy: {board.rehoused} reubicados, contra {today.rehoused} con el agente de siempre",
+               f"the night is worse than today's: {board.rehoused} rehoused, against {today.rehoused} with the old agent")
+        )  # fmt: skip
     if invalid:
         r_night.fail(
             _t(

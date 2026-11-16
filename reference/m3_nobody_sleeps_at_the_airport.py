@@ -92,19 +92,23 @@ class Workspace:
         if not isinstance(goal, str):
             return
         self.stories[goal].append({"at": self.env.now, "sender": msg.sender, "to": msg.to, "kind": msg.kind})
-        if self.state.get(goal) in ("complete", "handed_to_person"):
-            return
-        self.state[goal] = "working"
+        if self.state.get(goal) == "handed_to_person" or (self.is_closed and goal in self.state):
+            return  # after 04:30 every goal has its final state: complete, or with a person
         if msg.kind in ("notify", "needs_night", "notify_night"):
             self.needs[goal].add(msg.kind)
         seen = self.needs[goal]
-        if "notify" in seen and ("needs_night" not in seen or "notify_night" in seen):
-            self.state[goal] = "complete"
+        done = "notify" in seen and ("needs_night" not in seen or "notify_night" in seen)
+        self.state[goal] = "complete" if done else "working"  # a new need can reopen a goal
 
     def _hand_over(self) -> None:
         for goal, state in self.state.items():
             if state == "working":
                 self.state[goal] = "handed_to_person"
+        self.closed = True
+
+    @property
+    def is_closed(self) -> bool:
+        return getattr(self, "closed", False)
 
     def goals(self) -> dict[str, str]:
         return dict(self.state)
