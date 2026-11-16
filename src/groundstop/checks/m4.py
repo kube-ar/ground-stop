@@ -173,7 +173,7 @@ def run(module: ModuleType) -> list[Result]:
         if lost:
             moved.details.append(
                 _t(
-                    f"{nid}: {len(lost)} mensajes para {partner} perdidos después de que se mudó",
+                    f"{nid}: {len(lost)} mensajes para {partner} perdidos después de que cambió de dirección",
                     f"{nid}: {len(lost)} messages to {partner} lost after it moved",
                 )
             )

@@ -92,7 +92,7 @@ Tu código va en `src/groundstop/mine/`, un archivo por hito. `uv run ground-sto
 | 0 | [La tormenta](https://kube.ar/es/agentic-mesh/project/ground-stop/the-storm): la malla ingenua y su marcador | Por qué un ecosistema | listo |
 | 1 | [Contar los agentes](https://kube.ar/es/agentic-mesh/project/ground-stop/count-the-agents): las configs contra el tráfico | Por qué un ecosistema | listo |
 | 2 | [Un contrato para reprogramar](https://kube.ar/es/agentic-mesh/project/ground-stop/a-contract-for-rebooking): un plan, su log y un contrato | Un agente en el que otros confían | listo |
-| 3 | [Nadie duerme en el aeropuerto](https://kube.ar/es/agentic-mesh/project/ground-stop/nobody-sleeps-at-the-airport): un espacio de trabajo compartido | Agentes que trabajan juntos | listo |
+| 3 | [Que nada se pierda](https://kube.ar/es/agentic-mesh/project/ground-stop/nobody-sleeps-at-the-airport): un espacio de trabajo compartido | Agentes que trabajan juntos | listo |
 | 4 | [Ni una dirección fija](https://kube.ar/es/agentic-mesh/project/ground-stop/find-dont-hardcode): registro, descubrimiento y trazas | Servicios compartidos | listo |
 | 5 | [El hotel falso](https://kube.ar/es/agentic-mesh/project/ground-stop/the-fake-hotel): identidad, delegación y un punto de decisión | Seguridad y confianza | listo |
 | 6 | [Cuarentena](https://kube.ar/es/agentic-mesh/project/ground-stop/quarantine): certificación, topes y cuarentena | Seguridad y confianza | listo |
@@ -174,7 +174,7 @@ puts it back).
 | 0 | [The storm](https://kube.ar/agentic-mesh/project/ground-stop/the-storm): the naive mesh and its scoreboard | Why an ecosystem | ready |
 | 1 | [Count the agents](https://kube.ar/agentic-mesh/project/ground-stop/count-the-agents): the configs against the traffic | Why an ecosystem | ready |
 | 2 | [A contract for rebooking](https://kube.ar/agentic-mesh/project/ground-stop/a-contract-for-rebooking): a plan, its log and a contract | One agent others can rely on | ready |
-| 3 | [Nobody sleeps at the airport](https://kube.ar/agentic-mesh/project/ground-stop/nobody-sleeps-at-the-airport): a shared workspace | Agents working together | ready |
+| 3 | [Nothing gets lost](https://kube.ar/agentic-mesh/project/ground-stop/nobody-sleeps-at-the-airport): a shared workspace | Agents working together | ready |
 | 4 | [Find, don't hardcode](https://kube.ar/agentic-mesh/project/ground-stop/find-dont-hardcode): registry, discovery and traces | Shared services | ready |
 | 5 | [The fake hotel](https://kube.ar/agentic-mesh/project/ground-stop/the-fake-hotel): identity, delegation and one decision point | Security and trust | ready |
 | 6 | [Quarantine](https://kube.ar/agentic-mesh/project/ground-stop/quarantine): certification, caps and quarantine | Security and trust | ready |
