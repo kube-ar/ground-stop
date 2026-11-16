@@ -5,6 +5,8 @@ ground-stop show p1                    what happens on a night (the practice nig
 ground-stop replay                     replay p1 with the naive mesh; logs go to runs/p1/
 ground-stop replay s2 --mesh mymod     ...another night, with your own mesh (a module whose build() returns one)
 ground-stop --lang en replay           in English (or set GROUND_STOP_LANG=en)
+ground-stop check 1                    run milestone 1's checks on your code (--reference: on the reference)
+ground-stop use-reference 1            swap your file for the reference (yours is kept as *.mine.py; --undo)
 ground-stop generate --pack standard   rebuild a pack of nights from its seeds
 """
 
@@ -89,6 +91,55 @@ def cmd_replay(args) -> None:
     print(render(board, logs=f"{shown}/"))
 
 
+def _milestone(mid: str):
+    from .milestones import MILESTONES
+
+    if mid not in MILESTONES:
+        sys.exit(t("cli.no_milestone", id=mid, ids=", ".join(MILESTONES)))
+    return MILESTONES[mid]
+
+
+def cmd_check(args) -> None:
+    import importlib
+    import importlib.util
+
+    from .checks.core import report
+
+    m = _milestone(args.milestone)
+    if args.reference:
+        path = ROOT / m.reference
+        spec = importlib.util.spec_from_file_location(f"reference_m{m.id}", path)
+        assert spec and spec.loader
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = module
+        spec.loader.exec_module(module)
+    else:
+        module = importlib.import_module(m.module)
+    checks = importlib.import_module(m.checks)
+    print(t("check.running", id=m.id, what=t("check.reference") if args.reference else m.file))
+    ok = report(m, checks.run(module))
+    sys.exit(0 if ok else 1)
+
+
+def cmd_use_reference(args) -> None:
+    import shutil
+
+    m = _milestone(args.milestone)
+    mine, ref = ROOT / m.file, ROOT / m.reference
+    backup = mine.with_name(mine.stem + ".mine.py")
+    if args.undo:
+        if not backup.exists():
+            sys.exit(t("cli.no_backup", path=backup.relative_to(ROOT)))
+        shutil.move(backup, mine)
+        print(t("cli.restored", id=m.id))
+        return
+    if backup.exists():
+        sys.exit(t("cli.backup_exists", path=backup.relative_to(ROOT)))
+    shutil.copy(mine, backup)
+    shutil.copy(ref, mine)
+    print(t("cli.replaced", path=mine.relative_to(ROOT)))
+
+
 def cmd_generate(args) -> None:
     from .night.generate import generate_pack
 
@@ -120,6 +171,16 @@ def main(argv: list[str] | None = None) -> None:
     p.add_argument("--mesh", default="naive", help=t("cli.help.mesh"))
     p.add_argument("--out", help=t("cli.help.out"))
     p.set_defaults(fn=cmd_replay)
+
+    p = sub.add_parser("check", help=t("cli.help.check"))
+    p.add_argument("milestone")
+    p.add_argument("--reference", action="store_true", help=t("cli.help.reference"))
+    p.set_defaults(fn=cmd_check)
+
+    p = sub.add_parser("use-reference", help=t("cli.help.use_reference"))
+    p.add_argument("milestone")
+    p.add_argument("--undo", action="store_true", help=t("cli.help.undo"))
+    p.set_defaults(fn=cmd_use_reference)
 
     p = sub.add_parser("generate", help=t("cli.help.generate"))
     p.add_argument("--pack", required=True, choices=["practice", "standard", "final"])

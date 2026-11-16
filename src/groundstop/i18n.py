@@ -63,7 +63,7 @@ TEXT: dict[str, dict[str, str]] = {
     "board.bags": {"es": "Maletas sin reasignar", "en": "Bags not re-tagged"},
     "board.errors": {"es": "Errores dentro de los agentes", "en": "Errors inside agents"},
     "board.messages": {"es": "Mensajes entre agentes", "en": "Messages between agents"},
-    "board.logs": {"es": "Registros en {path}", "en": "Logs in {path}"},
+    "board.logs": {"es": "Logs en {path}", "en": "Logs in {path}"},
     "board.usd": {"es": "{count} (USD {amount})", "en": "{count} (USD {amount})"},
     # cli
     "cli.no_night": {
@@ -95,7 +95,7 @@ TEXT: dict[str, dict[str, str]] = {
         "en": "naive (Fragata's today) or a module whose build() returns your mesh",
     },
     "cli.help.out": {
-        "es": "carpeta para los registros (por defecto runs/<noche>/)",
+        "es": "carpeta para los logs (por defecto runs/<noche>/)",
         "en": "folder for the logs (default runs/<night>/)",
     },
     "cli.help.generate": {
@@ -145,6 +145,42 @@ TEXT: dict[str, dict[str, str]] = {
     "event.injection": {
         "es": "El pasajero {pax} responde un SMS con una instrucción escondida para el agente de compensaciones.",
         "en": "Passenger {pax} answers a text with an instruction hidden for the compensation agent.",
+    },
+    # checks
+    "check.title": {"es": "Hito {id} · {title}", "en": "Milestone {id} · {title}"},
+    "check.instructions": {"es": "Instrucciones: {url}", "en": "Instructions: {url}"},
+    "check.not_started": {"es": "sin empezar", "en": "not started"},
+    "check.more": {"es": "… y {n} más", "en": "… and {n} more"},
+    "check.read": {"es": "Lee: {title} → {url}", "en": "Read: {title} → {url}"},
+    "check.summary": {"es": "{passed}/{total} comprobaciones pasan", "en": "{passed}/{total} checks pass"},
+    "check.done": {
+        "es": "Hito completo. Márcalo como hecho en el sitio y sigue con el próximo.",
+        "en": "Milestone complete. Mark it done on the site and move on to the next one.",
+    },
+    "check.raised": {"es": "{fn} lanzó una excepción: {error}", "en": "{fn} raised: {error}"},
+    "check.none": {"es": "{fn} devolvió None: ¿falta un return?", "en": "{fn} returned None: did it forget a return?"},
+    "check.running": {"es": "Ejecutando el hito {id} sobre {what}…", "en": "Running milestone {id} on {what}…"},
+    "check.reference": {"es": "la solución de referencia", "en": "the reference solution"},
+    "cli.no_milestone": {"es": "No hay un hito {id!r}. Hay: {ids}", "en": "No milestone {id!r}. Available: {ids}"},
+    "cli.help.check": {"es": "ejecuta las comprobaciones de un hito", "en": "run a milestone's checks"},
+    "cli.help.reference": {
+        "es": "comprueba la solución de referencia en vez de tu código",
+        "en": "check the reference solution instead of your code",
+    },
+    "cli.help.use_reference": {
+        "es": "cambia tu archivo por la solución de referencia",
+        "en": "swap your file for the reference solution",
+    },
+    "cli.help.undo": {"es": "vuelve a poner tu archivo", "en": "put your own file back"},
+    "cli.backup_exists": {
+        "es": "{path} ya existe: ejecuta antes con --undo, o bórralo",
+        "en": "{path} already exists: run with --undo first, or remove it",
+    },
+    "cli.no_backup": {"es": "No hay copia en {path}", "en": "No backup at {path}"},
+    "cli.restored": {"es": "Volvió tu archivo del hito {id}.", "en": "Restored your file for milestone {id}."},
+    "cli.replaced": {
+        "es": "{path} ahora es la referencia; el tuyo quedó como *.mine.py (--undo lo devuelve).",
+        "en": "{path} is now the reference; yours is kept as *.mine.py (--undo puts it back).",
     },
     "mesh.naive": {"es": "ingenua", "en": "naive"},
     "pack.practice": {"es": "práctica", "en": "practice"},

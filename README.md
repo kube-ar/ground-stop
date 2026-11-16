@@ -61,7 +61,7 @@ Cada hito cambia una pieza de la malla, y el mismo marcador muestra qué arregla
 
 Con Docker: `docker compose run --rm ground-stop show p1`.
 
-Cada `replay` deja sus registros en `runs/<noche>/`: `traffic.log` (cada mensaje entre agentes, y
+Cada `replay` deja sus logs en `runs/<noche>/`: `traffic.log` (cada mensaje entre agentes, y
 los que se perdieron), `systems.log` (cada llamada a los sistemas de Fragata), `agents/*.log` (lo
 que anota cada agente), `passengers.jsonl` (qué le pasó a cada pasajero) y `scoreboard.json`.
 
@@ -73,7 +73,7 @@ que anota cada agente), `passengers.jsonl` (qué le pasó a cada pasajero) y `sc
 - **Los agentes son código de otros equipos** (`src/groundstop/agents/`). Léelos, pero no los
   cambies. Solo hablan a través del SDK (`ctx.send`, `ctx.publish`, `ctx.call`, `ctx.find`,
   `ctx.claim`), y el SDK le pasa cada pedido a la malla.
-- **La malla es tuya** (`src/groundstop/mesh/`): directorio, transporte, reclamos de trabajo,
+- **La malla es tuya** (`src/groundstop/mesh/`): directorio, transporte, quién toma cada caso,
   identidad, control de acceso y trazas. `naive.py` es la de hoy. Cada hito reemplaza una pieza.
 - **La empresa está en `company/`**: qué agentes declara cada equipo y qué direcciones tiene escritas
   cada uno, los socios, qué sistema puede llamar cada agente, la política de compensaciones y las
@@ -81,10 +81,13 @@ que anota cada agente), `passengers.jsonl` (qué le pasó a cada pasajero) y `sc
 
 ## Hitos
 
+Tu código va en `src/groundstop/mine/`, un archivo por hito. `uv run ground-stop check 1` comprueba el hito 1;
+`--reference` muestra cómo se ve pasar, y `use-reference 1` cambia tu archivo por la referencia (`--undo` lo devuelve).
+
 | # | Hito | Capítulo del curso | Estado |
 |---|---|---|---|
-| 0 | La tormenta: la malla ingenua y su marcador | Por qué un ecosistema | en preparación |
-| 1 | Contar los agentes | Por qué un ecosistema | planeado |
+| 0 | [La tormenta](https://kube.ar/es/agentic-mesh/project/ground-stop/the-storm): la malla ingenua y su marcador | Por qué un ecosistema | listo |
+| 1 | [Contar los agentes](https://kube.ar/es/agentic-mesh/project/ground-stop/count-the-agents): las configs contra el tráfico | Por qué un ecosistema | listo |
 | 2 | Un contrato para reprogramar | Un agente en el que otros confían | planeado |
 | 3 | Nadie duerme en el aeropuerto | Agentes que trabajan juntos | planeado |
 | 4 | Ni una dirección fija | Servicios compartidos | planeado |
@@ -156,10 +159,14 @@ and the ones that were lost), `systems.log` (every call to Fragata's systems), `
   one has hardcoded, the partners, which system each agent may call, the compensation policy and
   the (fictional) entry rules.
 
+Your code goes in `src/groundstop/mine/`, one file per milestone. `uv run ground-stop check 1` checks milestone 1;
+`--reference` shows what passing looks like, and `use-reference 1` swaps your file for the reference (`--undo`
+puts it back).
+
 | # | Milestone | Course chapter | Status |
 |---|---|---|---|
-| 0 | The storm: the naive mesh and its scoreboard | Why an ecosystem | in progress |
-| 1 | Count the agents | Why an ecosystem | planned |
+| 0 | [The storm](https://kube.ar/agentic-mesh/project/ground-stop/the-storm): the naive mesh and its scoreboard | Why an ecosystem | ready |
+| 1 | [Count the agents](https://kube.ar/agentic-mesh/project/ground-stop/count-the-agents): the configs against the traffic | Why an ecosystem | ready |
 | 2 | A contract for rebooking | One agent others can rely on | planned |
 | 3 | Nobody sleeps at the airport | Agents working together | planned |
 | 4 | Find, don't hardcode | Shared services | planned |
